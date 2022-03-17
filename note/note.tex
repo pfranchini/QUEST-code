@@ -110,9 +110,10 @@ T = - \frac{\Delta}{k_B \ln \left( \Delta f \frac{2 \pi \rho d}{p_F^2 v_F N(0)} 
 \end{equation}
 
 The increase of resonance width $\Delta (\Delta f)$ in response of an energy deposition $\Delta Q$ is linearly proportional, as shown in figure~\ref{fig:DeltaDeltaWvsDE}.
-The constant of proportionality is inversely proportional to the base temperature, so the other way around, in terms of energy deposition
+The constant of proportionality is inversely proportional to the base temperature (and pressure), so the other way around, in terms of energy deposition
 \begin{equation}
-  \Delta Q = \alpha(T_0) \Delta (\Delta f), \alpha \propto T_0
+  \Delta Q = \alpha(T_0,P) \Delta (\Delta f), \alpha \propto T_0
+    \label{eq:alpha}
 \end{equation}
 
 \begin{figure}[!ht]
@@ -134,15 +135,15 @@ The increase of resonance width $\Delta (\Delta f)$ can be measured from fitting
     \begin{tabular}{cc}
     \includegraphics[width=0.42\textwidth]{winkelmann} &
     \includegraphics[width=0.49\textwidth]{winkelmann_fit.pdf}
-    \label{fig:winkelmann}
     \end{tabular}
   \end{center}
- \caption{Example of an energy deposition event for a 4.5\,$\mu$m wire in a volume of 0.14\,cm$^3$ of He-3. H in the paper's notation is proportional to $\Delta (\Delta f)$ with respect to a base width~\cite{winkelmann} (\textit{left}); fit function as in eq.~\ref{fit} (\textit{right}) with $\tau_b$=5\,s and $\tau_w$=0.77\,s;.}
+  \caption{Example of an energy deposition event for a 4.5\,$\mu$m wire in a volume of 0.14\,cm$^3$ of He-3. H in the paper's notation is proportional to $\Delta (\Delta f)$ with respect to a base width~\cite{winkelmann} (\textit{left}); fit function as in eq.~\ref{fit} (\textit{right}) with $\tau_b$=5\,s, $\tau_w$=0.77\,s and $\Delta f_\mathrm{base}$=414\,mHz.}
+  \label{fig:winkelmann}
 \end{figure}
 using the function
 
 \begin{equation}
-  \Delta f = \Delta f_\mathrm{base} + \Delta (\Delta f) {\left( \frac{\tau_b}{\tau_w} \right)}^{\tau_w/(\tau_b-\tau_w)} \frac{\tau_b}{\tau_b - \tau_w} \left( e^{-t/\tau_b} - e^{-t/\tau_w} \right)
+  \Delta f(t)= \Delta f_\mathrm{base} + \Delta (\Delta f) {\left( \frac{\tau_b}{\tau_w} \right)}^{\tau_w/(\tau_b-\tau_w)} \frac{\tau_b}{\tau_b - \tau_w} \left( e^{-t/\tau_b} - e^{-t/\tau_w} \right)
 \label{fit}
 \end{equation}
 
@@ -165,26 +166,45 @@ Considering that there are three main variables, base temperature, pressure of t
 
 \end{itemize}
 
-Open questions:
-\begin{itemize}
+Ultimately the measurement done in the lab is done in terms of voltage readout of the oscillating wire, in two main steps:
+\begin{enumerate}
 
-  \item What is the minimum width variation we can measure, hence the threshold of the energy deposition? 
-  \item Which is the resolution in the resonance width variation (aka temperature variation), hence the resolution of the energy deposition?
+  \item \textit{Sweep measurement} to extract the resonance frequency of the wire for a certain base temperature and the base width $\Delta f_\mathrm{base}$. The quantities are extracted from the Lorentzian fits of the in-phase and out-of-phase signal (Voltage vs Frequency). This should provide the error $\sigma_{\Delta f_\mathrm{base}}$.
+  \item Data acquisition with the setup sitting at the resonance frequency (\textit{resonance tracking}) for a fixed voltage drive value $V_D$ (amplitude of the injected voltage). The measurement is voltage height $V_H$. From the Lorentzian function we know that
+  \begin{equation}
+  \frac{V_H\Delta f}{V_D} = \mathrm{const} = K
+  \end{equation}
+  so we are going to measure $\Delta f(t)$, as in figure~\ref{fig:winkelmann}, as
+  \begin{equation}
+  \Delta f(t) = \frac{V_D}{V_H(t)}K
+  \end{equation}
+  
+\end{enumerate}
 
-\end{itemize}
 
 
 % ============================================
 
 \section{Errors}
 
-We assume that the main uncertainty comes from the variation of resonance width $\Delta f$ of the wire, the error on the energy deposition would be
+Open questions:
+\begin{itemize}
+
+  \item What is the minimum voltage variation we can measure, hence the threshold of the energy deposition? 
+  \item Which is the resolution in the resonance width variation (aka temperature variation), hence the resolution of the energy deposition?
+
+\end{itemize}
+
+We assume that the main uncertainty comes from the voltage measurement which propagates into the determination of $\Delta f_\mathrm{base}$
+and into the quality of the fit to extract $\Delta (\Delta f)$
+
+The error on the energy deposition should be
 
 \begin{equation}
-  \sigma_{\Delta Q}  \simeq \frac{\partial \Delta Q}{\partial(\Delta(\Delta f))} \sigma_{\Delta (\Delta f)}
+  \sigma_{\Delta Q}  \simeq \frac{\partial \Delta Q}{\partial(\Delta(\Delta f))} \sigma_{\Delta (\Delta f)} \overset{\mathrm{eq. \ref{eq:alpha}}}{=} \alpha (T_0,P) \sigma_{\Delta (\Delta f)}
 \end{equation}
 
-which ultimately comes to the uncertainty in the fitting procedure and the uncertainty in the fast width measurement.
+Since the analytical error propagation might prove to be ineffective, is worth assigning an error coming from the voltage measurement noise from the lock-in amplifier and do a systematic error study starting from a toy distribution generated $\Delta f(t)$ (where the noise is present both for the baseline and for the signal distribution); find an error on the fit done to extract $\Delta (\Delta f)$, propagate this error to $\Delta Q$.
 
 % ============================================
 \pagebreak
@@ -193,7 +213,7 @@ which ultimately comes to the uncertainty in the fitting procedure and the uncer
 \begin{thebibliography}{9}
 
 \bibitem{vollhardt} Vollhardt, D., Wolfle, P., The Superfluid Phases of Helium 3 (1990)
-\bibitem{lawson} Lawson C., thesis (2014)
+\bibitem{lawson} Lawson, C.R., A Novel Measurement Device for use in Multiphase Helium-3 and 4 at Ultra-Low Temperatures, MPHys thesis (2014)
 \bibitem{winkelmann} Winkelmann et al, Bolometric calibration of a superfluid 3He detector for Dark Matter search: Direct measurement of the scintillated energy fraction for
 neutron, electron and muon events (2007)
 

@@ -187,6 +187,10 @@ if __name__ == "__main__":
         # Draw a line for each initial temperature
         plt.plot(DQ,DW,label=str(t0*1e6)+' $\mu$K')
 
+        # Fit each line
+        m, q = np.polyfit(DW, DQ, 1)
+        print("m: ",m)
+        
     plt.title('Width variation vs Deposited energy ('+str(pressure)+' bar - '+str(d*1e9)+' nm)')
     plt.xlim([0, 100e3])
     plt.ylim([0, 0.3])
@@ -217,7 +221,7 @@ if __name__ == "__main__":
         #print(dw,(heat_capacity_Cv_B_phase_intergral_from_0(T2, pressure) - heat_capacity_Cv_B_phase_intergral_from_0(T1, pressure)) * volume * 6.242e+18)
                 
     plt.plot(DQ/1e3,DW*1e3,label='DQvsDW')
-    plt.title('Width variation vs Deposited energy')
+    plt.title('Width variation vs Deposited energy (Winkelmann)')
     plt.xlim([0, 900])
     plt.xlabel('$\Delta$Q [KeV]')
     plt.ylabel('$\Delta(\Delta f)$ [mHz]')
