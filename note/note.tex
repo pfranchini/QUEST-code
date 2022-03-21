@@ -185,13 +185,11 @@ so we are going to measure $\Delta f(t)$, as in figure~\ref{fig:winkelmann}, as
   
 \end{enumerate}
 
-
-
 % ============================================
 
 \section{Errors}
 
-Open questions:
+In order to answer to the following questions, we need to find which is the measurement uncertainty coming from the laboratory setup:
 \begin{itemize}
 
   \item What is the minimum voltage variation we can measure, hence the threshold of the energy deposition? 
@@ -214,9 +212,48 @@ Since the data acquisition will fit $\Delta f$ we need to add the uncertainty $\
 \begin{equation}
 \sigma_{\Delta f}(t) = \left| \frac{\partial \Delta f(t)}{\partial V_H(t)} \right| \sigma_{V_H} = \frac{(\Delta f(t))^2}{V_{H_{\mathrm{base}}} \Delta f_\mathrm{base}} \sigma_{V_H}
 \end{equation}
-producing a distribution like this
+producing a distribution like in~figure~\ref{fig:toy}. To summarize the independent parameters present in the simulation are
+
+\begin{itemize}
+  \item volume and density of the helium-3 cell (V, $\rho$)
+  \item helium pressure (P)
+  \item diameter of the oscillating wire (d)
+  \item base temperature of the helium ($T_0$)
+  \item decay constant and response time ($\tau_b$, $\tau_w$)
+  \item base voltage height ($V_{H_\mathrm{base}}$)
+  \item error on the voltage measurement ($\sigma_{V_H}$)
+\end{itemize}
+
+\begin{figure}[!ht]
+  \begin{center}
+    \includegraphics[width=0.69\textwidth]{deltaf_toy-example}
+    \caption{Example of a pseudo-experiment distribution of $\Delta f(t)$.}
+    \label{fig:toy}
+  \end{center}
+\end{figure}
+
+The randomization and fit of the pseudo-experiments is repeated N times, ultimately extracting the distribution of the deposited energy from the fitted $\Delta(\Delta f)$ using eq.~\ref{eq:alpha}, as in figure~\ref{fig:energy_distribution}.
+
+\begin{figure}[!ht]
+  \begin{center}
+    \includegraphics[width=0.69\textwidth]{energy_distribution}
+    \caption{Energy distribution for 10000 toys.}
+    \label{fig:energy_distribution}
+  \end{center}
+\end{figure}
+
+The error for the energy measurement can be related to $\sigma/\mu$, so for a range of energies [0--100]\,KeV is possible to obtain distributions of the expected error for a certain configuration (figure~\ref{fig:error})
+
+\begin{figure}[!ht]
+  \begin{center}
+    \includegraphics[width=0.69\textwidth]{error}
+    \caption{Error vs energy for a certain configuration. The relative error increases with energy because is proportional to the square of the width increase.}
+    \label{fig:error}
+  \end{center}
+\end{figure}
 
 % ============================================
+
 \pagebreak
 \newpage
 

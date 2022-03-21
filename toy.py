@@ -37,19 +37,21 @@ density = 6.05e3;  # [kg/m^3] Niobium-Titanium (NbTi)
 
 #=============================================================
 
-pressure = 10     # [bar] pressure
+pressure = 10    # [bar] pressure
 t_base = 150e-6  # [K] base temperature
 d = 200e-9;      # [m] vibrating wire diameter
 
 t_b = 5.0   # [s] decay constant
 t_w = 0.77  # [s] response time
 
-v_h=4.6*1e-6   # [V] Base voltage height
-v_rms=15*1e-9  # [V] Error on voltage measurement
+v_h = 4.6*1e-7   # [V] Base voltage height
+v_rms = 15*1e-9  # [V] Error on voltage measurement
 # v_drive=14.5e-3
 
-N = 1000  # number of toys
+#=============================================================
 
+N = 1000  # number of toys
+verbose=False # verbosity for plotting
 
 ## More routines: ###########################################
 
@@ -82,12 +84,13 @@ def DeltaWidth_from_Energy(E,PressureBar):
         DW = np.append(DW,dw)
         
     # Draw the plot 
-    plt.plot(DQ/1e3,DW*1e3,label='DQvsDW')
-    plt.title('Width variation vs Deposited energy')
-    plt.xlim([0, 100])
-    plt.xlabel('$\Delta$Q [KeV]')
-    plt.ylabel('$\Delta(\Delta f)$ [mHz]')
-    plt.show()
+    if verbose: 
+        plt.plot(DQ/1e3,DW*1e3,label='DQvsDW')
+        plt.title('Width variation vs Deposited energy')
+        plt.xlim([0, 100])
+        plt.xlabel('$\Delta$Q [KeV]')
+        plt.ylabel('$\Delta(\Delta f)$ [mHz]')
+        plt.show()
     
     # Fit line
     global m
@@ -102,12 +105,11 @@ def DeltaWidth_from_Energy(E,PressureBar):
 def df(t,fb,d):
     return fb + np.heaviside(t-5,1)*(d*np.power(t_b/t_w,t_w/(t_b-t_w))*(t_b/(t_b - t_w))*(np.exp(-(t-5)/t_b) - np.exp(-(t-5)/t_w)))
 
-##########################################################
+###########################################################
 
+def Toy(energy):
 
-
-if __name__ == "__main__":
-
+    print("Energy:      ",str(energy), " eV")
     # Input delta(width) from input energy
     delta = DeltaWidth_from_Energy(energy,pressure)
     
@@ -118,7 +120,7 @@ if __name__ == "__main__":
     print("Width variation: ",delta*1000, " mHz")
 
     
-    t = np.linspace(0, 50, 100) # time
+    t = np.linspace(0, 50, 200) # time
 
     fit = np.array([]) 
 
@@ -126,10 +128,7 @@ if __name__ == "__main__":
     for i in range(N):
         # Delta f vs time
         deltaf = f_base + np.heaviside(t-5,1)*(delta*np.power(t_b/t_w,t_w/(t_b-t_w))*(t_b/(t_b - t_w))*(np.exp(-(t-5)/t_b) - np.exp(-(t-5)/t_w)))
-        #plt.plot(t, deltaf)
-        #plt.show()
 
-        #print("RMS error: ",np.power(deltaf[1],2)/(v_h*f_base)*v_rms)
         # Add noise based on voltage error
         for j in range(len(deltaf)):
             deltaf[j] = np.random.normal(deltaf[j],np.power(deltaf[j],2)/(v_h*f_base)*v_rms, 1)
@@ -137,34 +136,58 @@ if __name__ == "__main__":
         # Random noise    
         #noise = np.random.normal(0, 1e-3, len(t))
         #deltaf = deltaf + noise
-
         #plt.plot(t, deltaf)
         #plt.show()
         
         # Fit the noise'd distribution        
         popt, pcov = curve_fit(df,t,deltaf)
-
         _, d_fit = popt
 
         fit = np.append(fit,d_fit/m)
-        
-    plt.plot(t, deltaf)
-    plt.plot(t, df(t,*popt))
-    plt.xlabel('time [s]')
-    plt.ylabel('$\Delta f$ [Hz]')
-    plt.show()
+
+    if verbose:
+        plt.plot(t, deltaf,linestyle='',marker='.', color="black")
+        plt.plot(t, df(t,*popt))
+        plt.xlabel('time [s]')
+        plt.ylabel('$\Delta f$ [Hz]')
+        plt.savefig('deltaf_toy-example.pdf')
+        plt.show()
 
     ## fit
     (mu, sigma) = norm.fit(fit)    
-    plt.hist(fit/1000,100)
+
+    if verbose:
+        plt.hist(fit/1000,100)
+        plt.xlabel('Energy [KeV]')
+        plt.ylabel('Entries')
+        plt.savefig('energy_distribution.pdf')
+        plt.show()
+    
+    return mu, sigma
+
+###########################################################
+
+
+if __name__ == "__main__":
+
+    error = np.array([])
+    e = np.array([])
+    
+    for energy in np.arange(10000, 100e3, 2e3):
+
+        mu, sigma = Toy(energy)
+        print(mu,sigma,sigma/mu*100,"%")
+
+        error = np.append(error,sigma/mu*100)
+        e = np.append(e,energy)
+
+    plt.plot(e/1000,error, linestyle='', marker='o', color="black")
     plt.xlabel('Energy [KeV]')
-    plt.ylabel('Entries')
-
-
-    
-    print(mu,sigma,sigma/mu*100,"%")
-    
-    
+    plt.ylabel('Error [%]')
+    plt.savefig('error.pdf')
     plt.show()
+
+    
+
 
     
