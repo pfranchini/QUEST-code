@@ -172,11 +172,15 @@ Ultimately the measurement done in the lab is done in terms of voltage readout o
   \item \textit{Sweep measurement} to extract the resonance frequency of the wire for a certain base temperature and the base width $\Delta f_\mathrm{base}$. The quantities are extracted from the Lorentzian fits of the in-phase and out-of-phase signal (Voltage vs Frequency). This should provide the error $\sigma_{\Delta f_\mathrm{base}}$.
   \item Data acquisition with the setup sitting at the resonance frequency (\textit{resonance tracking}) for a fixed voltage drive value $V_D$ (amplitude of the injected voltage). The measurement is voltage height $V_H$. From the Lorentzian function we know that
   \begin{equation}
-  \frac{V_H\Delta f}{V_D} = \mathrm{const} = K
+    \frac{V_H\Delta f}{V_D} = \mathrm{const} = K
   \end{equation}
-  so we are going to measure $\Delta f(t)$, as in figure~\ref{fig:winkelmann}, as
+in particular for the base values
   \begin{equation}
-  \Delta f(t) = \frac{V_D}{V_H(t)}K
+    \frac{V_{H_\mathrm{base}}\Delta f_\mathrm{base}}{V_D} = \mathrm{const} = K
+  \end{equation}
+so we are going to measure $\Delta f(t)$, as in figure~\ref{fig:winkelmann}, as
+  \begin{equation}
+    \Delta f(t) = \frac{V_D}{V_H(t)}K
   \end{equation}
   
 \end{enumerate}
@@ -195,16 +199,22 @@ Open questions:
 
 \end{itemize}
 
-We assume that the main uncertainty comes from the voltage measurement which propagates into the determination of $\Delta f_\mathrm{base}$
+We assume that the main uncertainty comes from the voltage measurement $\sigma_{V_H}$ which propagates into the determination of $\Delta f_\mathrm{base}$
 and into the quality of the fit to extract $\Delta (\Delta f)$
 
 The error on the energy deposition should be
 
 \begin{equation}
-  \sigma_{\Delta Q}  \simeq \frac{\partial \Delta Q}{\partial(\Delta(\Delta f))} \sigma_{\Delta (\Delta f)} \overset{\mathrm{eq. \ref{eq:alpha}}}{=} \alpha (T_0,P) \sigma_{\Delta (\Delta f)}
+  \sigma_{\Delta Q}  \simeq \left| \frac{\partial \Delta Q}{\partial(\Delta(\Delta f))} \right| \sigma_{\Delta (\Delta f)} \overset{\mathrm{eq. \ref{eq:alpha}}}{=} \alpha (T_0,P) \sigma_{\Delta (\Delta f)}
 \end{equation}
 
-Since the analytical error propagation might prove to be ineffective, is worth assigning an error coming from the voltage measurement noise from the lock-in amplifier and do a systematic error study starting from a toy distribution generated $\Delta f(t)$ (where the noise is present both for the baseline and for the signal distribution); find an error on the fit done to extract $\Delta (\Delta f)$, propagate this error to $\Delta Q$.
+The analytical error propagation might prove to be ineffective; is worth assigning an error coming from the voltage measurement noise from the lock-in amplifier and do a systematic error study starting from a toy distribution generated $\Delta f(t)$ (where the noise is present both for the baseline and for the signal distribution); find an error on the fit done to extract $\Delta (\Delta f)$; propagate this error to $\Delta Q$.
+
+Since the data acquisition will fit $\Delta f$ we need to add the uncertainty $\sigma_{\Delta f}$ on the toy generated function from eq.~\ref{fit}, where
+\begin{equation}
+\sigma_{\Delta f}(t) = \left| \frac{\partial \Delta f(t)}{\partial V_H(t)} \right| \sigma_{V_H} = \frac{(\Delta f(t))^2}{V_{H_{\mathrm{base}}} \Delta f_\mathrm{base}} \sigma_{V_H}
+\end{equation}
+producing a distribution like this
 
 % ============================================
 \pagebreak
