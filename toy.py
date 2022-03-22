@@ -23,7 +23,7 @@ from scipy.optimize import curve_fit
 from scipy.stats import norm
 
 # import Tsepelin code
-execfile("mod_helium3.py")
+exec(open("mod_helium3.py").read())
 
 ## Input #####################################################
 
@@ -173,7 +173,8 @@ if __name__ == "__main__":
     error = np.array([])
     e = np.array([])
     
-    for energy in np.arange(10000, 100e3, 2e3):
+    #    for energy in np.arange(10000, 100e3, 2e3):
+    for energy in np.arange(100, 3000, 200):
 
         mu, sigma = Toy(energy)
         print(mu,sigma,sigma/mu*100,"%")

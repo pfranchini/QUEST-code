@@ -215,8 +215,8 @@ Since the data acquisition will fit $\Delta f$ we need to add the uncertainty $\
 producing a distribution like in~figure~\ref{fig:toy}. To summarize the independent parameters present in the simulation are
 
 \begin{itemize}
-  \item volume and density of the helium-3 cell (V, $\rho$)
-  \item helium pressure (P)
+  \item volume and pressure of the helium-3 cell (V, P)
+  \item wire density ($\rho$)
   \item diameter of the oscillating wire (d)
   \item base temperature of the helium ($T_0$)
   \item decay constant and response time ($\tau_b$, $\tau_w$)
@@ -246,7 +246,10 @@ The error for the energy measurement can be related to $\sigma/\mu$, so for a ra
 
 \begin{figure}[!ht]
   \begin{center}
-    \includegraphics[width=0.69\textwidth]{error}
+    \begin{tabular}{cc}
+    \includegraphics[width=0.49\textwidth]{error_low} &
+    \includegraphics[width=0.49\textwidth]{error}
+    \end{tabular}
     \caption{Error vs energy for a certain configuration. The relative error increases with energy because is proportional to the square of the width increase.}
     \label{fig:error}
   \end{center}
