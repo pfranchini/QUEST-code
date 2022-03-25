@@ -1,6 +1,7 @@
 .gitignore
-*.pdf
-*.png
 *~
 .*
 #*
+*.pdf
+*.png
+*.log

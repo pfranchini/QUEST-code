@@ -167,7 +167,7 @@ if __name__ == "__main__":
     plt.show()
     
     
-    # Width variation vs Deposited energy for multiple starting temperatures
+    # Width variation vs Deposited energy for multiple starting TEMPERATURES
     for t0 in np.arange(50e-6, 310e-6, 50e-6):
         
         W0=Width_from_Temperature(t0,pressure)
@@ -201,7 +201,43 @@ if __name__ == "__main__":
     plt.show()
 
 
+    # Width variation vs Deposited energy for multiple wire DIAMETERS
+    t0 = 100e-6   # fix the temperature
+    
+    for d in np.arange(50e-9, 300e-9, 50e-9):
 
+        W0=Width_from_Temperature(t0,pressure)
+        print(t0,W0)
+
+        DQ = np.array([])  # delta energy [eV]
+        DW = np.array([])  # delta width [Hz]    
+    
+        for dw in np.arange(0,2.5,0.001):  # Delta(Deltaf)
+            T2= Temperature_from_Width(W0+dw,pressure)
+            T1= Temperature_from_Width(W0,pressure)
+            #print(T1,T2,T2-T1)
+            DQ = np.append(DQ,(heat_capacity_Cv_B_phase_intergral_from_0(T2, pressure) - heat_capacity_Cv_B_phase_intergral_from_0(T1, pressure)) * volume * 6.242e+18) #[eV]#
+            DW = np.append(DW,dw)
+            #print(dw,(heat_capacity_Cv_B_phase_intergral_from_0(T2, pressure) - heat_capacity_Cv_B_phase_intergral_from_0(T1, pressure)) * volume * 6.242e+18)
+
+        # Draw a line for each diameter
+        plt.plot(DQ,DW,label=str(d*1e9)+' nm')
+
+        # Fit each line
+        m, q = np.polyfit(DW, DQ, 1)
+        print("m: ",m)
+        
+    plt.title('Width variation vs Deposited energy ('+str(pressure)+' bar - '+str(t0*1e6)+' $\mu$K)')
+    plt.xlim([0, 100e3])
+    plt.ylim([0, 0.3])
+    plt.xlabel('$\Delta$Q [eV]')
+    plt.ylabel('$\Delta(\Delta f)$ [Hz]')
+    plt.legend()
+    plt.savefig('DeltaDeltaW_vs_DE_wire-'+str(int(pressure))+'bar.pdf')
+    plt.show()
+    
+
+    
     # Bolometric calibration (Winkelmann)
     pressure=0
     d=4.5e-06
