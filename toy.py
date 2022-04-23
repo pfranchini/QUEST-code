@@ -38,11 +38,11 @@ density = 6.05e3;  # [kg/m^3] Niobium-Titanium (NbTi)
 #=============================================================
 
 pressure = 10    # [bar] pressure
-t_base = 150e-6  # [K] base temperature
+t_base = 170e-6  # [K] base temperature
 d = 2000e-9;      # [m] vibrating wire diameter
 
 t_b = 5.00  # [s] decay constant
-t_w = 0.77  # [s] response time
+#t_w = 0.77  # [s] response time - IS NOT CONSTANT -
 
 v_h = np.pi/2*1e-7  # [V] Base voltage height for a v=1mm/s
 v_rms = 3.5*1e-9    # [V] Error on voltage measurement for a lock-in amplifier
@@ -50,7 +50,7 @@ v_rms = 3.5*1e-9    # [V] Error on voltage measurement for a lock-in amplifier
 
 #=============================================================
 
-N = 10000  # number of toys
+N = 1000  # number of toys
 verbose=True # verbosity for plotting
 
 ## More routines: ###########################################
@@ -69,7 +69,7 @@ def Temperature_from_Width(Width,PressureBar):
     return temperature
 
 def DeltaWidth_from_Energy(E,PressureBar,BaseTemperature):
-    # Find delta width from the input energy deposition:
+    # Find delta width from the input energy deposition for a certain base temperature
 
     # find fit line for the Width variation vs Deposited energy for the base temperature
     W0=Width_from_Temperature(BaseTemperature,PressureBar)
@@ -85,6 +85,7 @@ def DeltaWidth_from_Energy(E,PressureBar,BaseTemperature):
         DW = np.append(DW,dw)
         
     # Draw the plot 
+    '''
     if verbose and E==10000: 
         plt.plot(DQ/1e3,DW*1e3,label='DQvsDW')
         plt.title('Width variation vs Deposited energy')
@@ -92,6 +93,7 @@ def DeltaWidth_from_Energy(E,PressureBar,BaseTemperature):
         plt.xlabel('$\Delta$Q [KeV]')
         plt.ylabel('$\Delta(\Delta f)$ [mHz]')
         plt.show()
+    '''
     
     # Fit line to extract the slope alpha: DQ = alpha * DW
     global alpha
@@ -104,7 +106,9 @@ def DeltaWidth_from_Energy(E,PressureBar,BaseTemperature):
 
 # Define signal fit function Dw vs time
 def df(_t,_fb,_d): # time, base width, delta (delta width)
-    return _fb + np.heaviside(_t-5,1)*(_d*np.power(t_b/t_w,t_w/(t_b-t_w))*(t_b/(t_b - t_w))*(np.exp(-(_t-5)/t_b) - np.exp(-(_t-5)/t_w)))
+    _t_w = 1/(np.pi*_fb)
+    _t1=5
+    return _fb + np.heaviside(_t-_t1,1)*(_d*np.power(t_b/_t_w,_t_w/(t_b-_t_w))*(t_b/(t_b-_t_w))*(np.exp(-(_t-_t1)/t_b) - np.exp(-(_t-_t1)/_t_w)))
 
 ###########################################################
 
@@ -118,9 +122,12 @@ def Toy(energy):
     # Base width from the input base temperature
     f_base = Width_from_Temperature(t_base,pressure)
 
-    print("Base width:      ",f_base, " Hz")
-    print("Width variation: ",delta*1000, " mHz")
-
+    # Response time
+    t_w = 1/(np.pi*f_base)
+    
+    print("Base width:      ",f_base*1000, " mHz")
+    print("Width variation: ",delta*1000,  " mHz")
+    print("t_w: ",t_w, "s")
     
     t = np.linspace(0, 50, 200) # time
 
@@ -129,6 +136,7 @@ def Toy(energy):
 
     # Repeat the fit N times
     for i in range(N):
+
         # Delta f vs time
         deltaf = f_base + np.heaviside(t-5,1)*(delta*np.power(t_b/t_w,t_w/(t_b-t_w))*(t_b/(t_b - t_w))*(np.exp(-(t-5)/t_b) - np.exp(-(t-5)/t_w)))
 
@@ -162,7 +170,7 @@ def Toy(energy):
 
     if verbose and energy==10000:
         # Plot voltage(t)
-        plt.plot(t,v_h*f_base/deltaf*1e9,linestyle='',marker='.', color="black")
+        plt.plot(t, v_h*f_base/deltaf*1e9,linestyle='',marker='.', color="black")
         plt.plot(t, v_h*f_base/df(t,*popt)*1e9)
         plt.xlabel('time [s]')
         plt.ylabel('$V_H$ [nV]')
@@ -208,13 +216,19 @@ def Toy(energy):
 
 if __name__ == "__main__":
 
-        
+    print()
+    print("Temperature: ",t_base*1e6, " uk")
+    print("Diameter:    ",d*1e9," nm")
+    print("Pressure:    ",pressure, "bar")
+    
     # Calculates alpha_prime for the error propagation
     global alpha_prime
     epsilon=1e-9
     _, alpha1 = DeltaWidth_from_Energy(energy, pressure, t_base - epsilon/2)
     _, alpha2 = DeltaWidth_from_Energy(energy, pressure, t_base + epsilon/2)
-    alpha_prime = (alpha2-alpha1)/epsilon
+    gap = energy_gap_in_low_temp_limit(pressure)
+    alpha_prime = (alpha2-alpha1)/epsilon * Boltzmann_const/gap * np.power(t_base,2) * 1/Width_from_Temperature(t_base,pressure)
+
     print("alpha_prime",alpha_prime)
 
     

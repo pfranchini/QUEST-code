@@ -20,13 +20,13 @@ def arguments(argv):
         elif opt in ("-d", "--diameter"):
             d = float(arg)
             
-def Width_from_Temperature(Temperature,PressureBar):
+def Width_from_Temperature(Temperature,PressureBar,_d):
     """
     Calculates the resonance width [Hz] from the Temperature [K]
     (from Samuli matlab scripts)
     """
     gap = energy_gap_in_low_temp_limit(PressureBar)
-    width=np.power(Fermi_momentum(PressureBar),2)*Fermi_velocity(PressureBar)*density_of_states(PressureBar)/(2*density*np.pi*d)*np.exp(-gap/(Boltzmann_const*Temperature))
+    width=np.power(Fermi_momentum(PressureBar),2)*Fermi_velocity(PressureBar)*density_of_states(PressureBar)/(2*density*np.pi*_d)*np.exp(-gap/(Boltzmann_const*Temperature))
     
     return width
     
@@ -72,7 +72,7 @@ if __name__ == "__main__":
     Cv = np.array([])  # heat capacity [J/K/m^3]
     I = np.array([])   # integrated heat capacity (0,T) [J/m^3]
     DQ = np.array([])  # DeltaQ [eV]
-    
+    '''    
     for t in np.arange(0.0, 500e-6, 0.000001):
         Cv = np.append(Cv,heat_capacity_Cv_B_phase(t, pressure))
         I  = np.append(I ,heat_capacity_Cv_B_phase_intergral_from_0(t, pressure))
@@ -235,8 +235,61 @@ if __name__ == "__main__":
     plt.legend()
     plt.savefig('DeltaDeltaW_vs_DE_wire-'+str(int(pressure))+'bar.pdf')
     plt.show()
+    '''
     
+    # Width variation vs wire diameter, for a certain base temperature and energy
+    t0 = 150e-6   # fix the temperature
+    energy= 10000 # fit the energy
 
+    Diameter = np.array([])
+    Width = np.array([])
+    DeltaWidth = np.array([])
+
+    for d in np.arange(50e-9, 20000e-9, 100e-9):
+        
+        W0=Width_from_Temperature(t0,pressure,d) # base width
+
+        DQ = np.array([])  # delta energy [eV]
+        DW = np.array([])  # delta width [Hz]    
+    
+        for dw in np.arange(0,2.5,0.01):  # Delta(Deltaf)
+            T2= Temperature_from_Width(W0+dw,pressure)
+            T1= Temperature_from_Width(W0,pressure)
+            #print(T1,T2,T2-T1)
+            DQ = np.append(DQ,(heat_capacity_Cv_B_phase_intergral_from_0(T2, pressure) - heat_capacity_Cv_B_phase_intergral_from_0(T1, pressure)) * volume * 6.242e+18) #[eV]#
+            DW = np.append(DW,dw)
+            #print(dw,(heat_capacity_Cv_B_phase_intergral_from_0(T2, pressure) - heat_capacity_Cv_B_phase_intergral_from_0(T1, pressure)) * volume * 6.242e+18)
+
+        Diameter = np.append(Diameter,d)
+        Width = np.append(Width,W0)
+        # Fit line to extract the slope
+        alpha, _ = np.polyfit(DW, DQ, 1)
+        DeltaWidth = np.append(DeltaWidth,energy/alpha)
+
+    plt.plot(Diameter*1e9,Width,label='Base width vs Diameter')
+    plt.title('Base width vs Wire diameter ('+str(pressure)+' bar - '+str(t0*1e6)+' $\mu$K)')
+    plt.xlabel('diameter [nm]')
+    plt.ylabel('$\Delta f$ [Hz]')
+    plt.savefig('DeltaW_vs_diameter-'+str(int(pressure))+'bar.pdf')
+    plt.show()
+        
+    plt.plot(Diameter*1e9,DeltaWidth,label='vs Diameter')
+    plt.title('Width variation vs Wire diameter ('+str(pressure)+' bar - '+str(t0*1e6)+' $\mu$K)')
+    plt.xlabel('diameter [nm]')
+    plt.ylabel('$\Delta(\Delta f)$ [Hz]')
+    plt.savefig('DeltaDeltaW_vs_diameter-'+str(int(pressure))+'bar.pdf')
+    plt.show()
+
+    plt.plot(Diameter*1e9,157e-9*(1-Width/(Width+DeltaWidth))*1e9,label='Voltage variation vs Diameter')
+    plt.title('Voltage variation vs Wire diameter ('+str(pressure)+' bar - '+str(t0*1e6)+' $\mu$K)')
+    plt.xlabel('diameter [nm]')
+    plt.ylabel('$\Delta$ V [nV]')
+    plt.savefig('DeltaVoltage_vs_diameter-'+str(int(pressure))+'bar.pdf')
+    plt.show()
+
+
+    #===============================================
+    
     
     # Bolometric calibration (Winkelmann)
     pressure=0

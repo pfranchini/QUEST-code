@@ -6,7 +6,7 @@
 \usepackage[sort, numbers]{natbib}
 %\usepackage{graphicx}
 \usepackage{amsmath}
-
+\usepackage{soul}
 
 \title{Temperature and energy measurements in ultra-low temperature Helium-3}
 \author{P. Franchini}
@@ -24,10 +24,10 @@
 Specific heat capacity $C_V$ as a function of the temperature $T$ (in units of [J/K/m$^3$]) has been calculated from the entropy of a system of independent fermions, quasiparticles~\cite{vollhardt}, as
 
 \begin{equation}
-C_V(T)=2(2\pi)^{1/2}k_BN_0\Delta\left(\frac{\Delta}{k_BT}\right)\exp\left(-\frac{\Delta}{k_BT}\right)
+C_V(T)=2(2\pi)^{1/2}k_BN_0\varDelta\left(\frac{\varDelta}{k_BT}\right)\exp\left(-\frac{\varDelta}{k_BT}\right)
 \end{equation}
 
-where $k_B$ is the Boltzmann constant, $N_0$ is the density of quasiparticle states in the normal phase at Fermi energy for one spin component, $\Delta$ ($\approx 1.76 k_B T_c$) is the average gap energy at low temperature near the critical temperature for superfluidity $T_c$ ($\simeq$930\,$\mu$K). They all depend on pressure P.
+where $k_B$ is the Boltzmann constant, $N_0$ is the density of quasiparticle states in the normal phase at Fermi energy for one spin component, $\varDelta$ ($\approx 1.76 k_B T_c$ at 0\,bar) is the average gap energy at low temperature near the critical temperature for superfluidity $T_c$ ($\simeq$930\,$\mu$K at 0\,bar). They all depend on pressure P.
 
 $C_V(T)$ has a strong dependency with temperature (fig.~\ref{fig:CvT})
 
@@ -50,18 +50,18 @@ To obtain the heat variation $\Delta Q$ between two temperatures $T_1$ and $T_2$
 where
 
 \begin{align}
-I(T) = \int_{0}^{T} C_V(T)dT & = \sqrt{2} \pi N_0 \Delta^2 \left( 1 - \frac{2}{\sqrt{\pi}}\int_{0}^{\sqrt \frac{\Delta}{k_BT}} e^{-t^2} dt \right) \\ 
-                             & =  \sqrt{2}\pi N_0\Delta^2 \mathrm{erfc} \sqrt{\frac{\Delta}{k_BT} } 
+I(T) = \int_{0}^{T} C_V(T)dT & = \sqrt{2} \pi N_0 \varDelta^2 \left( 1 - \frac{2}{\sqrt{\pi}}\int_{0}^{\sqrt \frac{\varDelta}{k_BT}} e^{-t^2} dt \right) \\ 
+                             & =  \sqrt{2}\pi N_0\varDelta^2 \mathrm{erfc} \sqrt{\frac{\varDelta}{k_BT} } 
 \end{align}
 
 therefore
 
 \begin{equation}
-\Delta Q (T_1,T_2) = \sqrt{2}\pi N_0\Delta^2 \left( \mathrm{erfc}\sqrt{\frac{\Delta}{k_BT_2}} - \mathrm{erfc}\sqrt{\frac{\Delta}{k_BT_1}} \right)V
+\Delta Q (T_1,T_2) = \sqrt{2}\pi N_0\varDelta^2 \left( \mathrm{erfc}\sqrt{\frac{\varDelta}{k_BT_2}} - \mathrm{erfc}\sqrt{\frac{\varDelta}{k_BT_1}} \right)V
 \end{equation}
 
 We consider the 1\,cm$^3$ volume of helium-3 at a certain base temperature $T_0$ so we can calculate the temperature variation $\Delta T$ for an energy deposition $\Delta Q(T_0,T_0+\Delta T)$;
-since both $N_0$ and $\Delta$ are function of the pressure we calculate the energy deposition for 4 different pressures in the range (0--30)\,bar (fig.~\ref{fig:TDE})
+since both $N_0$ and $\varDelta$ are function of the pressure we calculate the energy deposition for 4 different pressures in the range (0--30)\,bar (fig.~\ref{fig:TDE})
 
 \begin{figure}[!ht]
   \begin{center}
@@ -84,16 +84,17 @@ Since the resonance width is
 \Delta f = \frac{2F}{\pi \rho d}
 \end{equation}
 
-where $d$ and $\rho$ are respectively the diameter and the mass density of the wire, and $F$ is the damping(?) force (in units of length, velocity and diameter), defined as
+where $d$ and $\rho$ are respectively the diameter and the mass density of the wire, and $F$ is the damping %(?)
+force (in units of length, velocity and diameter), defined as
 
 \begin{equation}
-F = \frac{\pi}{4}p^2_F v_F N_0 \exp{\left( -\frac{\Delta}{k_B T} \right)}
+F = \frac{\pi}{4}p^2_F v_F N_0 \exp{\left( -\frac{\varDelta}{k_B T} \right)}
 \end{equation}
 
 The resonance width expressed in terms of temperature is
 
 \begin{equation}
-\Delta f = \frac{p^2_F v_F N_0}{2\pi\rho d}\exp{\left( -\frac{\Delta}{k_B T} \right)}
+\Delta f = \frac{p^2_F v_F N_0}{2\pi\rho d}\exp{\left( -\frac{\varDelta}{k_B T} \right)}
 \end{equation}
 
 e.g. in fig.~\ref{fig:WvsT} for a Niobium-Titanium wire of 150\,nm diameter in a volume at 1\,bar; therefore the temperature can be derived from the resonance width
@@ -107,7 +108,7 @@ e.g. in fig.~\ref{fig:WvsT} for a Niobium-Titanium wire of 150\,nm diameter in a
 \end{figure}
 
 \begin{equation}
-T = - \frac{\Delta}{k_B \ln \left( \Delta f \frac{2 \pi \rho d}{p_F^2 v_F N_0} \right)}
+T = - \frac{\varDelta}{k_B \ln \left( \Delta f \frac{2 \pi \rho d}{p_F^2 v_F N_0} \right)}
 \end{equation}
 
 The increase of resonance width $\Delta (\Delta f)$ in response of an energy deposition $\Delta Q$ is linearly proportional, as shown in figures~\ref{fig:DeltaDeltaWvsDE} and \ref{fig:DeltaDeltaWvsDE-wire}.
@@ -161,7 +162,7 @@ using the function
 \label{fit}
 \end{equation}
 
-in order to extract the maximum variation $\Delta (\Delta f)$, where $\Delta f_\mathrm{base}$ is the base width at the base temperature of the helium, $\tau_w$ is the response time of the oscillating wire
+(which is derived for $\tau_b \neq  \tau_w$) in order to extract the maximum variation $\Delta (\Delta f)$, where $\Delta f_\mathrm{base}$ is the base width at the base temperature of the helium, $\tau_w$ is the response time of the oscillating wire
 \begin{equation}
   \tau_w \simeq \frac{1}{\pi \Delta f} = \mathrm{const}
 \end{equation}
@@ -224,6 +225,10 @@ The analytical error propagation might prove to be ineffective; is worth assigni
 
 Since the data acquisition will fit $\Delta f$ we need to add the uncertainty $\sigma_{\Delta f}$ on the toy generated function from eq.~\ref{fit}, where
 \begin{equation}
+\sigma^2_{\Delta f}(t) = \left( \frac{\partial \Delta f(t)}{\partial V_H(t)} \right)^2 \sigma^2_{V_H} + \left( \frac{\partial \Delta f(t)}{\partial \Delta f_\mathrm{base}} \right)^2 \sigma^2_{\Delta f_\mathrm{base}} = \left( \frac{(\Delta f(t))^2}{V_{H_{\mathrm{base}}} \Delta f_\mathrm{base}} \right)^2 \sigma^2_{V_H} + \left( \frac{\Delta f(t)}{\Delta f_\mathrm{base}}\right)^2 \sigma^2_{\Delta f_\mathrm{base}}
+\end{equation}
+if we consider only the error on the voltage measurement $\sigma_{V_H}$ (while the error on the base frequency $\sigma_{\Delta f_\mathrm{base}}$ would need to be determined by a separate toy simulation on the Lorentzian fit for the amplitude sweep)
+\begin{equation}
 \sigma_{\Delta f}(t) = \left| \frac{\partial \Delta f(t)}{\partial V_H(t)} \right| \sigma_{V_H} = \frac{(\Delta f(t))^2}{V_{H_{\mathrm{base}}} \Delta f_\mathrm{base}} \sigma_{V_H}
 \end{equation}
 producing a distribution like in~figure~\ref{fig:toy}. To summarize the independent parameters present in the simulation are
@@ -233,7 +238,7 @@ producing a distribution like in~figure~\ref{fig:toy}. To summarize the independ
   \item wire density ($\rho$)
   \item diameter of the oscillating wire (d)
   \item base temperature of the helium ($T_0$)
-  \item decay constant and response time ($\tau_b$, $\tau_w$)
+  \item decay constant $\tau_b$ \st{and response time $\tau_w$}
   \item base voltage height ($V_{H_\mathrm{base}}$)
   \item error on the voltage measurement ($\sigma_{V_H}$)
 \end{itemize}
@@ -280,8 +285,16 @@ In order to consider the error on the wire diameter we should take into account 
                         + \alpha^2(T_0,P) \sigma_{\Delta (\Delta f)}^2
 \end{align}
 
+where the derivative of the slope $\alpha$ can be approximated as
 
-We can define the base voltage $V_{H_{\mathrm{base}}}$ fixing the wire velocity to $v$=1\,mm/s and assuming a field $B$=100\,mT and a leg spacing $D$=2\,mm, according to this, describing the induced voltage of the wire moving in a magnetic field
+\begin{align}
+  \frac{\partial \alpha}{\partial \Delta f_\mathrm{base}} & \simeq
+  \frac{\alpha(\Delta f_\mathrm{base}+\delta/2) - \alpha(\Delta f_\mathrm{base}-\delta/2) }{\delta} = \\
+       & = \frac{\alpha(T_0+\delta/2) - \alpha(T_0-\delta/2) }{\delta} \frac{\partial T(\Delta f)}{\partial \Delta f} = \\
+       & = \frac{\alpha(T_0+\delta/2) - \alpha(T_0-\delta/2) }{\delta} \frac{k_B}{\varDelta} \frac{T^2}{\Delta f(T)}
+\end{align}
+
+We can define the base voltage $V_{H_{\mathrm{base}}}$ fixing the wire velocity to $v$=1\,mm/s, assuming a field $B$=100\,mT and a leg spacing $D$=2\,mm, according to this, describing the induced voltage of the wire moving in a magnetic field as
 \begin{equation}
 V_H(t) = \frac{\pi}{4} B D v(t)
 \end{equation}
