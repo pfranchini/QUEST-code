@@ -1,4 +1,5 @@
 '''
+Toy MC simulation for the bolometer response
 
 Input:
  - Energy
@@ -25,10 +26,6 @@ from scipy.stats import norm
 # import Tsepelin code
 exec(open("mod_helium3.py").read())
 
-## Input #####################################################
-
-energy = 10000 # [eV]
-
 
 ## Parameters ################################################
 
@@ -37,9 +34,9 @@ density = 6.05e3;  # [kg/m^3] Niobium-Titanium (NbTi)
 
 #=============================================================
 
-pressure = 10    # [bar] pressure
-t_base = 170e-6  # [K] base temperature
-d = 2000e-9;      # [m] vibrating wire diameter
+pressure = 5     # [bar] pressure
+t_base = 150e-6  # [K] base temperature
+d = 200e-9;      # [m] vibrating wire diameter
 
 t_b = 5.00  # [s] decay constant
 #t_w = 0.77  # [s] response time - IS NOT CONSTANT -
@@ -51,7 +48,8 @@ v_rms = 3.5*1e-9    # [V] Error on voltage measurement for a lock-in amplifier
 #=============================================================
 
 N = 1000  # number of toys
-verbose=True # verbosity for plotting
+verbose=False # verbosity for plotting
+
 
 ## More routines: ###########################################
 
@@ -103,6 +101,7 @@ def DeltaWidth_from_Energy(E,PressureBar,BaseTemperature):
     deltawidth = E/alpha
        
     return deltawidth, alpha
+
 
 # Define signal fit function Dw vs time
 def df(_t,_fb,_d): # time, base width, delta (delta width)
@@ -194,86 +193,85 @@ def Toy(energy):
         plt.show()
 
 
-        
     ## Gaussian fit for base and delta toy distributions
     (delta_mu, delta_sigma) = norm.fit(delta_toy)
     (base_mu, base_sigma) = norm.fit(base_toy)
 
     print("Fitted base: ",base_mu," ",base_sigma)
     print("Fitted delta: ",delta_mu," ",delta_sigma)
-    
+
     print(alpha_prime*delta_mu*base_sigma)
     print(alpha*delta_sigma)
     
     energy_error=  np.sqrt( np.power(alpha_prime*delta_mu*base_sigma,2) + np.power(alpha*delta_sigma,2) )
 #    energy_error=  np.sqrt( np.power(alpha_prime*delta_mu*base_sigma,2) )
 
-    
     return energy_error
-    
+
+
+def Run_Toy(start_energy, end_energy, step):
+
+    global error
+    global e
+
+    for energy in np.arange(start_energy, end_energy, step):
+
+        sigma_energy = Toy(energy)
+        print(energy, sigma_energy, sigma_energy/energy*100,"%")
+
+        error = np.append(error,sigma_energy/energy*100)
+        e = np.append(e,energy)
+
+        print(energy,*(sigma_energy/energy*100),file=f)
+
+
 ###########################################################
 
 
 if __name__ == "__main__":
 
+    # Output file
+    f = open("error.txt", "w")
+    print("# energy[ev]","error[%]",file=f)
+
+    # Parameters used
     print()
     print("Temperature: ",t_base*1e6, " uk")
     print("Diameter:    ",d*1e9," nm")
     print("Pressure:    ",pressure, "bar")
-    
+
     # Calculates alpha_prime for the error propagation
     global alpha_prime
     epsilon=1e-9
-    _, alpha1 = DeltaWidth_from_Energy(energy, pressure, t_base - epsilon/2)
-    _, alpha2 = DeltaWidth_from_Energy(energy, pressure, t_base + epsilon/2)
+    _, alpha1 = DeltaWidth_from_Energy(1000, pressure, t_base - epsilon/2)
+    _, alpha2 = DeltaWidth_from_Energy(1000, pressure, t_base + epsilon/2)
     gap = energy_gap_in_low_temp_limit(pressure)
     alpha_prime = (alpha2-alpha1)/epsilon * Boltzmann_const/gap * np.power(t_base,2) * 1/Width_from_Temperature(t_base,pressure)
-
     print("alpha_prime",alpha_prime)
-
     
     # Starts the toy simulation for a range of energies
+    global error
+    global e
     error = np.array([])
     e = np.array([])
 
-    '''
-    for energy in np.arange(100, 900, 50):
+    Run_Toy(100, 900, 50)
+    Run_Toy(1000, 9000, 500)
+    Run_Toy(10000, 100000, 2000)
 
-        sigma_energy = Toy(energy)
-        print(energy, sigma_energy, sigma_energy/energy*100,"%")
-
-        error = np.append(error,sigma_energy/energy*100)
-        e = np.append(e,energy)
-
-    for energy in np.arange(1000, 9000, 500):
-
-        sigma_energy = Toy(energy)
-        print(energy, sigma_energy, sigma_energy/energy*100,"%")
-
-        error = np.append(error,sigma_energy/energy*100)
-        e = np.append(e,energy)
-
-
-    for energy in np.arange(10000, 100000, 2000):
-
-        sigma_energy = Toy(energy)
-        print(energy, sigma_energy, sigma_energy/energy*100,"%")
-
-        error = np.append(error,sigma_energy/energy*100)
-        e = np.append(e,energy)
-
-
-    
+    # Plot results
     plt.plot(e/1000,error, linestyle='', marker='o', color="black")
     plt.xscale('log')
+    plt.ylim([0, 100])  
     plt.xlabel('Energy [KeV]')
     plt.ylabel('Error [%]')
     plt.savefig('error'+str(d*1e9)+'.pdf')
     plt.savefig('error'+str(d*1e9)+'.png')
     plt.show()
 
-    
-    '''        
 
-    _ = Toy(10000);
+    # Single toy run for a defined energy
+    #_ = Toy(10000);
+
     
+    f.close()
