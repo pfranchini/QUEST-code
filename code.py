@@ -268,6 +268,7 @@ if __name__ == "__main__":
 
     plt.plot(Diameter*1e9,Width,label='Base width vs Diameter')
     plt.title('Base width vs Wire diameter ('+str(pressure)+' bar - '+str(t0*1e6)+' $\mu$K)')
+    plt.xscale('log')
     plt.xlabel('diameter [nm]')
     plt.ylabel('$\Delta f$ [Hz]')
     plt.savefig('DeltaW_vs_diameter-'+str(int(pressure))+'bar.pdf')
