@@ -2,6 +2,12 @@
 Analysis of Viktor's data
 =========================
 
+ - Reads Viktor's data
+ - Calculates the energy from the width distribution for 
+   peaks above 2*rms
+
+-------------------------
+
 Input:
  - Energy
 
@@ -44,7 +50,7 @@ density = 6.05e3;  # [kg/m^3] Niobium-Titanium (NbTi)
 pressure = 0    # [bar] pressure
 #t_base = 111e-6  # [K] base temperature
 d = 4.5e-6;      # [m] 3m2: vibrating wire diameter
-#d = 13.5e-6;      # [m] 3m2: vibrating wire diameter
+#d = 13.5e-6;      # [m] m1 = 3*3m2: vibrating wire diameter
 
 t_b = 5.00  # [s] decay constant
 #t_w = 0.77  # [s] response time - IS NOT CONSTANT -
@@ -121,108 +127,6 @@ def df(time,a,b):
 
 ###########################################################
 
-def Toy(energy):
-
-    print()
-    print("Energy:      ",str(energy), " eV")
-    # Input delta(width) from input energy
-    delta, _ = DeltaWidth_from_Energy(energy,pressure,t_base)
-    
-    # Base width from the input base temperature
-    f_base = Width_from_Temperature(t_base,pressure)
-
-    # Response time
-    t_w = 1/(np.pi*f_base)
-    
-    print("Base width:      ",f_base*1000, " mHz")
-    print("Width variation: ",delta*1000,  " mHz")
-    print("t_w: ",t_w, "s")
-    
-    t = np.linspace(0, 50, 200) # time
-
-    base_toy = np.array([])  # base width distribution
-    delta_toy = np.array([]) # delta width distribution
-
-    # Repeat the fit N times
-    for i in range(N):
-
-        # Delta f vs time
-        deltaf = f_base + np.heaviside(t-5,1)*(delta*np.power(t_b/t_w,t_w/(t_b-t_w))*(t_b/(t_b - t_w))*(np.exp(-(t-5)/t_b) - np.exp(-(t-5)/t_w)))
-
-        # Add noise based on voltage error
-        for j in range(len(deltaf)):
-            deltaf[j] = np.random.normal(deltaf[j],np.power(deltaf[j],2)/(v_h*f_base)*v_rms, 1)
-
-        # Random noise    
-        #noise = np.random.normal(0, 1e-3, len(t))
-        #deltaf = deltaf + noise
-        #plt.plot(t, deltaf)
-        #plt.show()
-        
-        # Fit the noise'd distribution        
-        popt, pcov = curve_fit(df,t,deltaf)
-        # errors on base width and width increase
-        base_fit, delta_fit = popt
-
-        delta_toy = np.append(delta_toy,delta_fit)
-        base_toy = np.append(base_toy,base_fit)
-
-        
-    if verbose and energy==10000:
-        # Plot deltaf(t)
-        plt.plot(t, deltaf,linestyle='',marker='.', color="black")
-        plt.plot(t, df(t,*popt))
-        plt.xlabel('time [s]')
-        plt.ylabel('$\Delta f$ [Hz]')
-        plt.savefig('deltaf_toy-example'+str(d*1e9)+'.pdf')
-        plt.show()
-
-    if verbose and energy==10000:
-        # Plot voltage(t)
-        plt.plot(t, v_h*f_base/deltaf*1e9,linestyle='',marker='.', color="black")
-        plt.plot(t, v_h*f_base/df(t,*popt)*1e9)
-        plt.xlabel('time [s]')
-        plt.ylabel('$V_H$ [nV]')
-        plt.savefig('voltage_toy-example'+str(d*1e9)+'.pdf')
-        plt.show()
-
-    # Plot toy energy distribution
-    if verbose and energy==10000:
-        plt.hist(delta_toy*alpha/1000,100)
-        plt.xlabel('Energy [KeV]')
-        plt.ylabel('Entries')
-        plt.savefig('energy_distribution'+str(d*1e9)+'.pdf')
-        plt.show()
-
-    # Plot toy base distribution
-    if verbose and energy==10000:
-        plt.hist(base_toy,100)
-        plt.xlabel('Base width [Hz]')
-        plt.ylabel('Entries')
-        plt.savefig('base_width_distribution'+str(d*1e9)+'.pdf')
-        plt.show()
-
-
-        
-    ## Gaussian fit for base and delta toy distributions
-    (delta_mu, delta_sigma) = norm.fit(delta_toy)
-    (base_mu, base_sigma) = norm.fit(base_toy)
-
-    print("Fitted base: ",base_mu," ",base_sigma)
-    print("Fitted delta: ",delta_mu," ",delta_sigma)
-    
-    print(alpha_prime*delta_mu*base_sigma)
-    print(alpha*delta_sigma)
-    
-    energy_error=  np.sqrt( np.power(alpha_prime*delta_mu*base_sigma,2) + np.power(alpha*delta_sigma,2) )
-#    energy_error=  np.sqrt( np.power(alpha_prime*delta_mu*base_sigma,2) )
-
-    
-    return energy_error
-    
-###########################################################
-
-
 if __name__ == "__main__":
 
     print()
@@ -267,12 +171,13 @@ if __name__ == "__main__":
     for w in width_:
         width = np.append(width,float(w))
 
+    rms = np.sqrt(np.mean(width**2))
+    print('rms: ',rms)
+    
     temperature = np.array([])
     for temp in temperature_:
         temperature = np.append(temperature,float(temp))
 
-    print(temperature)
-        
     t_base = np.nanmean(temperature)
     print("Average temperature:      ",t_base, " K")
 
@@ -285,6 +190,7 @@ if __name__ == "__main__":
     f_base = Width_from_Temperature(t_base,pressure)
     print("Calculated base width:      ",f_base*1000, " mHz")
 
+    # The background is the mean
     background = np.nanmean(width)
     print("Background: ",background*1000, " mHz")
 
@@ -293,107 +199,42 @@ if __name__ == "__main__":
     plt.plot(t,width)
     plt.show()
 
-    threshold = 0 #0.3 #0.2
-    peaks, _ = find_peaks(width, height=(f_base[0]+threshold))
-
+    #Find peaks above 2*rms
+    peaks, _ = find_peaks(width, height = 2*rms)
+    #p_widths = peak_widths(width, peaks[0])
+    #threshold = 0 #0.3 #0.2
+    #peaks, _ = find_peaks(width, height=(f_base[0]+threshold))
+    
     print("NUmber of peaks: ",len(peaks))
     
     _, alpha = DeltaWidth_from_Energy(1000,pressure,t_base)
     print("Alpha: ",alpha)
 
+    # Energy from the model calibration
     energy = (width[peaks]-background)*alpha
 
+    # Width with peaks
     plt.plot(width)
     plt.plot(peaks, width[peaks], "x")
-    plt.plot(np.zeros_like(width)+f_base[0]+threshold, "--", color="gray")
+    plt.plot(np.zeros_like(width)+2*rms, "--", color="gray")
     plt.show()
 
-    plt.hist(energy/1e3, 400, range=[0, 2000])
+    # Energy vs time
+    plt.plot(t,(width-background)*alpha/1e3)
+    plt.xlabel('time [s]')
+    plt.ylabel('energy [keV]')
+    plt.show()
+
+    # Energy distribution
+    plt.hist(energy/1e3, 100, range=[0, 5000])
     plt.yscale('log')
-    plt.xlim([0, 2000])    
+    plt.xlim([0, 5000])    
     plt.xlabel('Energy [keV]')
+    plt.axvline(x=1311, linestyle="--", color="gray")  # K-40: beta
+    plt.axvline(x=728.8, linestyle="--", color="gray") # Pb-214: beta
     plt.show()     
 
-    '''
-    #interval = (x>=9821) & (x<=9830)
-    plt.xlim([9821,9830])
-    plt.xlabel('time [s]')
-    plt.ylabel('width [Hz]')
-    plt.plot(t,width)
-    plt.show()
-
-    #width2 = np.array([])
-    #for w in width:
-    #    width2 = np.append(width2,float(w))
-
-    #plt.hist(width2, 100)
-    #plt.xlim([0,0.8])
-    #plt.show()
-    #    plt.plot(x,y[(x>=9821) & (x<=9830)])
-    #plt.plot(data['secs'],data['TW29temperature'])
-    '''
-
-
-
-
-#    popt, pcov = curve_fit(df,x,y)
-
-    '''
-    # Calculates alpha_prime for the error propagation
-    global alpha_prime
-    epsilon=1e-9
-    _, alpha1 = DeltaWidth_from_Energy(energy, pressure, t_base - epsilon/2)
-    _, alpha2 = DeltaWidth_from_Energy(energy, pressure, t_base + epsilon/2)
-    gap = energy_gap_in_low_temp_limit(pressure)
-    alpha_prime = (alpha2-alpha1)/epsilon * Boltzmann_const/gap * np.power(t_base,2) * 1/Width_from_Temperature(t_base,pressure)
-
-    print("alpha_prime",alpha_prime)
-
-    
-    # Starts the toy simulation for a range of energies
-    error = np.array([])
-    e = np.array([])
-
-    
-    for energy in np.arange(100, 900, 50):
-
-        sigma_energy = Toy(energy)
-        print(energy, sigma_energy, sigma_energy/energy*100,"%")
-
-        error = np.append(error,sigma_energy/energy*100)
-        e = np.append(e,energy)
-
-    for energy in np.arange(1000, 9000, 500):
-
-        sigma_energy = Toy(energy)
-        print(energy, sigma_energy, sigma_energy/energy*100,"%")
-
-        error = np.append(error,sigma_energy/energy*100)
-        e = np.append(e,energy)
-
-
-    for energy in np.arange(10000, 100000, 2000):
-
-        sigma_energy = Toy(energy)
-        print(energy, sigma_energy, sigma_energy/energy*100,"%")
-
-        error = np.append(error,sigma_energy/energy*100)
-        e = np.append(e,energy)
-
-
-    
-    plt.plot(e/1000,error, linestyle='', marker='o', color="black")
-    plt.xscale('log')
-    plt.ylim([0, 100])  
-    plt.xlabel('Energy [KeV]')
-    plt.ylabel('Error [%]')
-    plt.savefig('error'+str(d*1e9)+'.pdf')
-    plt.savefig('error'+str(d*1e9)+'.png')
-    plt.show()
-
-    
-            
-
-    _ = Toy(10000);
-
-    '''    
+    # Print Energy array in a file
+    f = open("energies.txt", "w")
+    np.savetxt(f, energy)
+    f.close()
