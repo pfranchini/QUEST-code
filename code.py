@@ -113,7 +113,7 @@ if __name__ == "__main__":
     plt.xlabel('$\Delta$Q [eV]')
     plt.ylabel('$\Delta$T [$\mu$K]')
     plt.legend()
-    plt.savefig('T_vs_DE-'+str(int(pressure))+'bar.pdf')
+    plt.savefig('output/T_vs_DE-'+str(int(pressure))+'bar.pdf')
     plt.show()
     
     # Plots
@@ -122,7 +122,7 @@ if __name__ == "__main__":
     #plt.xlim([0, 500])
     #plt.xlabel('T [$\mu$K]')
     #plt.ylabel('$C_v$ [J/K/m$^3$]')
-    #plt.savefig('Cv_vs_T-zoom.pdf')
+    #plt.savefig('output/Cv_vs_T-zoom.pdf')
     #plt.show()
     
     plt.plot(T,I,label='I')
@@ -146,7 +146,7 @@ if __name__ == "__main__":
     #plt.xlim([0, 500])
     plt.xlabel('$\Delta$f [Hz]')
     plt.ylabel('T [$\mu$K]')
-    plt.savefig('T_vs_W.pdf')
+    plt.savefig('output/T_vs_W.pdf')
     plt.show()
 
     
@@ -163,7 +163,7 @@ if __name__ == "__main__":
     #plt.xlim([0, 500])
     plt.xlabel('T [$\mu$K]')
     plt.ylabel('$\Delta$f [Hz]')
-    plt.savefig('W_vs_T.pdf')
+    plt.savefig('output/W_vs_T.pdf')
     plt.show()
     
     
@@ -197,7 +197,7 @@ if __name__ == "__main__":
     plt.xlabel('$\Delta$Q [eV]')
     plt.ylabel('$\Delta(\Delta f)$ [Hz]')
     plt.legend()
-    plt.savefig('DeltaDeltaW_vs_DE-'+str(int(pressure))+'bar.pdf')
+    plt.savefig('output/DeltaDeltaW_vs_DE-'+str(int(pressure))+'bar.pdf')
     plt.show()
 
 
@@ -233,11 +233,11 @@ if __name__ == "__main__":
     plt.xlabel('$\Delta$Q [eV]')
     plt.ylabel('$\Delta(\Delta f)$ [Hz]')
     plt.legend()
-    plt.savefig('DeltaDeltaW_vs_DE_wire-'+str(int(pressure))+'bar.pdf')
+    plt.savefig('output/DeltaDeltaW_vs_DE_wire-'+str(int(pressure))+'bar.pdf')
     plt.show()
     '''
-    
-    # Width variation vs wire diameter, for a certain base temperature and energy
+
+    # Dependences on vire diameter, for a certain base temperature and energy
     t0 = 150e-6   # fix the temperature
     energy= 10000 # fit the energy
 
@@ -271,21 +271,29 @@ if __name__ == "__main__":
     plt.xscale('log')
     plt.xlabel('diameter [nm]')
     plt.ylabel('$\Delta f$ [Hz]')
-    plt.savefig('DeltaW_vs_diameter-'+str(int(pressure))+'bar.pdf')
+    plt.savefig('output/DeltaW_vs_diameter-'+str(int(pressure))+'bar.pdf')
     plt.show()
         
-    plt.plot(Diameter*1e9,DeltaWidth,label='vs Diameter')
+    plt.plot(Diameter*1e9,DeltaWidth,label='DeltaWidth vs Diameter')
     plt.title('Width variation vs Wire diameter ('+str(pressure)+' bar - '+str(t0*1e6)+' $\mu$K)')
     plt.xlabel('diameter [nm]')
     plt.ylabel('$\Delta(\Delta f)$ [Hz]')
-    plt.savefig('DeltaDeltaW_vs_diameter-'+str(int(pressure))+'bar.pdf')
+    plt.savefig('output/DeltaDeltaW_vs_diameter-'+str(int(pressure))+'bar.pdf')
+    plt.show()
+
+    # Sensitivity as DeltaDeltaf/Energy
+    plt.plot(Diameter*1e9,DeltaWidth/energy*1e6,label='Sensitivity vs Diameter')
+    plt.title('Sensitivity vs Wire diameter ('+str(pressure)+' bar - '+str(t0*1e6)+' $\mu$K)')
+    plt.xlabel('diameter [nm]')
+    plt.ylabel('$\Delta(\Delta f)$/energy [mHz/keV]')
+    plt.savefig('output/Sensitivity_vs_diameter-'+str(int(pressure))+'bar.pdf')
     plt.show()
 
     plt.plot(Diameter*1e9,157e-9*(1-Width/(Width+DeltaWidth))*1e9,label='Voltage variation vs Diameter')
     plt.title('Voltage variation vs Wire diameter ('+str(pressure)+' bar - '+str(t0*1e6)+' $\mu$K)')
     plt.xlabel('diameter [nm]')
     plt.ylabel('$\Delta$ V [nV]')
-    plt.savefig('DeltaVoltage_vs_diameter-'+str(int(pressure))+'bar.pdf')
+    plt.savefig('output/DeltaVoltage_vs_diameter-'+str(int(pressure))+'bar.pdf')
     plt.show()
 
 
@@ -293,6 +301,7 @@ if __name__ == "__main__":
     
     
     # Bolometric calibration (Winkelmann)
+    print("Bolometric calibration in Winkelmann:")
     pressure=0
     d=4.5e-06
     volume=3*0.1413*1e-6
@@ -309,11 +318,17 @@ if __name__ == "__main__":
         DQ = np.append(DQ,(heat_capacity_Cv_B_phase_intergral_from_0(T2, pressure) - heat_capacity_Cv_B_phase_intergral_from_0(T1, pressure)) * volume * 6.242e+18) #[eV]#
         DW = np.append(DW,dw)
         #print(dw,(heat_capacity_Cv_B_phase_intergral_from_0(T2, pressure) - heat_capacity_Cv_B_phase_intergral_from_0(T1, pressure)) * volume * 6.242e+18)
-                
+
+
+    # Fit line to extract the slope
+    alpha, _ = np.polyfit(DW, DQ, 1)
+
+    print("Sensitivity [mHz/keV]: ",1/alpha*1e6)
+        
     plt.plot(DQ/1e3,DW*1e3,label='DQvsDW')
     plt.title('Width variation vs Deposited energy (Winkelmann)')
     plt.xlim([0, 900])
     plt.xlabel('$\Delta$Q [KeV]')
     plt.ylabel('$\Delta(\Delta f)$ [mHz]')
-    plt.savefig('Winkelmann.pdf')
+    plt.savefig('output/Winkelmann.pdf')
     plt.show()

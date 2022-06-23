@@ -19,7 +19,7 @@
 %\begin{abstract}
 %\end{abstract}
 
-%\section{}
+\section{Bolometric model for energy measurement}
 
 Specific heat capacity $C_V$ as a function of the temperature $T$ (in units of [J/K/m$^3$]) has been calculated from the entropy of a system of independent fermions, quasiparticles~\cite{vollhardt}, as
 
@@ -175,15 +175,28 @@ Note that the energy measurement depends only on $\Delta (\Delta f)$ and not on 
 
 Considering that there are three main variables, base temperature, pressure of the helium, wire diameter (considering fixed the wire material and the helium volume), all with an interplay between each other, we can at least extract few conclusions:
 \begin{itemize}
-  \item For small wires there is an higher amplitude of the width response $\Delta (\Delta f)$
+  \item For small wires there is a higher amplitude of the width response $\Delta (\Delta f)$. In other terms the \textit{sensitivity} increases reducing the wire diameter (as $1/d$), as in figure~\ref{fig:SensitivityVsDiameter}.
   \item For low temperatures there is an higher amplitude of the width response $\Delta (\Delta f)$
   \item For high pressures there is a lower width response for a certain energy deposition
   \item The response time of the oscillating wire is faster for high temperatures 
   \item The decay time of the oscillating wire is faster for high temperatures (low Kapitza resistance), so low temperatures might cause some pile-up of events
-
 \end{itemize}
 
-Ultimately the measurement done in the lab is done in terms of voltage readout of the oscillating wire, in two main steps:
+\begin{figure}[!ht]
+  \begin{center}
+    \includegraphics[width=0.69\textwidth]{Sensitivity_vs_diameter-0bar}
+    \caption{Sensitivity measuring the deposited energy with width variation vs wire diameter.}
+    \label{fig:SensitivityVsDiameter}
+  \end{center}
+\end{figure}
+
+
+
+% ============================================
+
+\section{Laboratory readout}
+
+Ultimately the actual method of measurement performed in the lab is done in terms of voltage readout of the oscillating wire, in two main steps:
 \begin{enumerate}
 
   \item \textit{Sweep measurement} to extract the resonance frequency of the wire for a certain base temperature and the base width $\Delta f_\mathrm{base}$. The quantities are extracted from the Lorentzian fits of the in-phase and out-of-phase signal (Voltage vs Frequency). This should provide the error $\sigma_{\Delta f_\mathrm{base}}$.
@@ -266,7 +279,7 @@ The randomization and fit of the pseudo-experiments is repeated N times, ultimat
   \end{center}
 \end{figure}
 
-The error for the energy measurement can be related to $\sigma/\mu$, so for a range of energies [0--100]\,KeV is possible to obtain distributions of the expected error for a certain configuration (figure~\ref{fig:error})
+The error for the energy measurement can be related to $\sigma/\mu$, so for a range of energies [0--100]\,keV is possible to obtain distributions of the expected error for a certain configuration (figure~\ref{fig:error})
 
 \begin{figure}[!ht]
   \begin{center}
