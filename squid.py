@@ -1,6 +1,9 @@
 '''
 Simulation for the bolometer response with a SQUID readout
-considering the resolution as in Lev's note
+considering the resolution as in Lev's note.
+
+Usage:
+   squid.py -p <pressure [bar]> -d <diameter [m]>
 
 Input:
  - Energy
@@ -13,10 +16,13 @@ Input:
  - SQUID parameters
 
 Output:
- - Error on Energy 
+ - Resolution vs B, with R dependency
+ - Error on Energy, with R dependency
 
 '''
 
+import sys
+import getopt
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
@@ -38,21 +44,13 @@ pressure = 5     # [bar] pressure
 t_base = 150e-6  # [K] base temperature
 d = 200e-9;      # [m] vibrating wire diameter
 
-# USELESS HERE: t_b = 5.00  # [s] decay constant
-#t_w = 0.77  # [s] response time - IS NOT CONSTANT -
-
-# USELESS HERE: v_h = np.pi/2*1e-7  # [V] Base voltage height for a v=1mm/s
-# USELESS HERE: v_rms = 3.5*1e-9    # [V] Error on voltage measurement for a lock-in amplifier
-# v_drive=14.5e-3
-
 #=============================================================
 
-# USELESS HERE: N = 1000  # number of toys
 verbose=False # verbosity for plotting
 
-## SQUID paramenters ========================
+## SQUID parameters ==========================================
 
-B = 0.4e-3 # T
+#B = 0.4e-3 # T # as field uses always the one that minimize dW
 R = 1 # Ohm
 
 w0 = 5000  # Hz
@@ -61,14 +59,34 @@ L = 1.5e-6 # H
 phi0 = 2.067833848e-15  # Wb
 S = np.power(0.4e-6*phi0,2) # Hz^-1
 M = 10.0e-9 # H
-l = 1e-3 # m
+l = 2e-3 # m
 m = np.power(d/2,2)*np.pi*density # kg/m
-v0 = 1e-3 # m/sec
 
-# ===========================================
+# ===========================================================
    
 
 ## More routines: ###########################################
+
+def arguments(argv):
+
+    global pressure
+    global d
+    arg_help = "{0} -p <pressure [bar]> -d <diameter [m]>".format(argv[0])
+
+    try:
+        opts, args = getopt.getopt(argv[1:], "hp:d:", ["help", "pressure=", "diameter="])
+    except:
+        print(arg_help)
+        sys.exit(2)
+
+    for opt, arg in opts:
+        if opt in ("-h", "--help"):
+            print(arg_help)  # print the help message
+            sys.exit(2)
+        elif opt in ("-p", "--pressure"):
+            pressure = float(arg)
+        elif opt in ("-d", "--diameter"):
+            d = float(arg)
 
 def Width_from_Temperature(Temperature,PressureBar):
     
@@ -120,12 +138,12 @@ def DeltaWidth_from_Energy(E,PressureBar,BaseTemperature):
     return deltawidth, alpha
 
 # SQUID resolution as in Lev's note (dW) [Hz]
-def SQUID_Resolution(magnetic_field,resistance): 
+def SQUID_Resolution(_pressure,magnetic_field,resistance):
     Z=l*np.power(magnetic_field,2)/(2*np.pi*m*f_base)
+    v0=Boltzmann_const*t_base/Fermi_momentum(_pressure)
     V=l*v0*magnetic_field # max voltage across the wire
 
     return np.sqrt( (np.power(Z+resistance,2) + np.power(w0*L,2))*S*np.pi*f_base/2/np.power(M,2) + 4*Boltzmann_const*t_base*resistance*np.pi*f_base/2 + Boltzmann_const*t_base*l*np.power(magnetic_field,2)/m )/V * f_base
-#    return np.sqrt( (np.power(Z+resistance,2) + np.power(w0*L,2))*S*np.pi*f_base/2/np.power(M,2) + 4*Boltzmann_const*t_base*resistance*np.pi*f_base/2 + Boltzmann_const*t_base*l*np.power(magnetic_field,2)/m )/V * f_base 
 
 ###########################################################
 
@@ -145,7 +163,7 @@ def Toy(energy):
 
     # Calculate the resolution from eq.8 in the Lev's note on SQUID
     #for field in np.arange(1e-6,1,1e3): 
-    delta_sigma = SQUID_Resolution(B,R)
+    delta_sigma = SQUID_Resolution(pressure,B,R)
     
     energy_error=  alpha*delta_sigma
 
@@ -161,7 +179,7 @@ def Run_Toy(start_energy, end_energy, step):
     for energy in np.arange(start_energy, end_energy, step):
 
         sigma_energy = Toy(energy)
-        print("Error:", sigma_energy,"eV", sigma_energy/energy*100,"%")
+        print("Error:", sigma_energy,"eV, ", sigma_energy/energy*100,"%")
 
         error = np.append(error,sigma_energy/energy*100)
         e = np.append(e,energy)
@@ -178,31 +196,99 @@ if __name__ == "__main__":
     f = open("squid_error.txt", "w")
     print("# energy[ev]","error[%]",file=f)
 
+    arguments(sys.argv)
+
     # Parameters used
     print()
     print("Temperature: ",t_base*1e6, " uk")
     print("Diameter:    ",d*1e9," nm")
     print("Pressure:    ",pressure, "bar")
+    print("T/Tc:        ",t_base/temperature_critical_superfluid(pressure))
 
-
-    # Resolution vs the magnetic field
     energy= 10000
     delta, _ = DeltaWidth_from_Energy(energy,pressure,t_base)
     
-    f_base = Width_from_Temperature(t_base,pressure)
+    print("Thermal motion energy: ",alpha*Fermi_momentum(pressure)/np.sqrt(l*m*Boltzmann_const*t_base), "eV")
 
-    Field = np.array([])  # [T]
-    Resolution = np.array([])  # [Hz]
+    # Base width vs pressure
+    Pressure = np.array([])  # [bar]
+    Width = np.array([])  # [Hz]
+    for p in np.arange(0, 30, 0.1):
+        Pressure=np.append(Pressure,p)
+        Width=np.append(Width,Width_from_Temperature(t_base,p))
+
+    plt.title(str(d*1e9)+" nm - "+str(l*1e3)+" mm - "+str(t_base*1e6)+" $\mu$K")
+    plt.plot(Pressure, Width)
+    plt.xlabel('Pressure [bar]')
+    plt.ylabel('Base width [Hz]')
+    plt.show()
+
+    # Alpha width vs pressure
+    '''
+    Pressure = np.array([])  # [bar]
+    Alpha = np.array([])  # [Hz]
+    for p in np.arange(0, 30, 1):
+        Pressure=np.append(Pressure,p)
+        _, a = DeltaWidth_from_Energy(10000,p,t_base)
+        Alpha=np.append(Alpha,a)
+
+    plt.title(str(d*1e9)+" nm - "+str(l*1e3)+" mm - "+str(t_base*1e6)+" $\mu$K")
+    plt.plot(Pressure, Alpha)
+    plt.xlabel('Pressure [bar]')
+    plt.ylabel('Alpha [eV/Hz]')
+    plt.show()
+    '''
+
+    # Resolution vs pressure, for different wire/contact resistances
+    print("Resolution vs pressure...")
+    B = 0.4e-3 # T
+    for R in (1, 0.1, 0.01, 0.001, 0):
+
+        Pressure = np.array([])  # [bar]
+        Resolution = np.array([])  # [Hz]
+
+        for p in np.arange(0, 30, 0.1):
+            f_base = Width_from_Temperature(t_base,p)
+            Pressure=np.append(Pressure,p)
+            Resolution=np.append(Resolution,SQUID_Resolution(p,B,R))
+
+        plt.plot(Pressure, Resolution, label=str(R)+' $\Omega$')
+
+    plt.title(str(d*1e9)+" nm - "+str(l*1e3)+" mm - "+str(t_base*1e6)+" $\mu$K")
+    plt.yscale('log')
+    plt.xlabel('Pressure [bar]')
+    plt.ylabel('Resolution [Hz]')
+    #plt.axhline(y=thermal_motion, color='grey', linestyle='-')
+    plt.legend()
+    plt.show()
+
+    # Resolution vs the magnetic field, for different wire/contact resistances
+    print("Resolution vs magnetic field...")
+    f_base = Width_from_Temperature(t_base,pressure)
+    for R in (1, 0.1, 0.01, 0.001, 0):
+
+        print("Resistance: ",R)
+
+        Field = np.array([])  # [T]
+        Resolution = np.array([])  # [Hz]
+
+        for bfield in np.arange(1e-6, 1, 1e-5):
+            Field=np.append(Field,bfield)
+            Resolution=np.append(Resolution,SQUID_Resolution(pressure,bfield,R))
+
+        plt.plot(Field, Resolution, label=str(R)+' $\Omega$')
+
+        # Threshold from dW for field corresponding to the minimum 
+        print("  Threshold: ",alpha*SQUID_Resolution(pressure,Field[Resolution.argmin()],R), "eV")
+
+    thermal_motion=Fermi_momentum(pressure)/np.sqrt(l*m*Boltzmann_const*t_base)
     
-    for bfield in np.arange(1e-6, 1, 1e-4):
-        Field=np.append(Field,bfield)
-        Resolution=np.append(Resolution,SQUID_Resolution(bfield,R))
-        
-    plt.plot(Field, Resolution)
     plt.xscale('log')
     plt.yscale('log')
     plt.xlabel('Magnetic field [T]')
     plt.ylabel('Resolution [Hz]')
+    plt.axhline(y=thermal_motion, color='grey', linestyle='-')
+    plt.legend()
     plt.show()
 
     '''
@@ -235,11 +321,22 @@ if __name__ == "__main__":
 
     '''
     
-    # Error for differente wire/contact resistance
-
+    # Error for different wire/contact resistances
+    print("Error vs energy...")
     for R in (1, 0.1, 0.01, 0.001, 0):
 
         print("Resistance: ",R)
+
+        # Finds the field that minimize dW
+        Field = np.array([])  # [T]
+        Resolution = np.array([])  # [Hz]
+
+        for bfield in np.arange(1e-6, 1, 1e-5):
+            Field=np.append(Field,bfield)
+            Resolution=np.append(Resolution,SQUID_Resolution(pressure,bfield,R))
+
+        # Threshold from dW for field corresponding to the minimum 
+        B = Field[Resolution.argmin()]
 
         error = np.array([])
         e = np.array([])
@@ -250,8 +347,9 @@ if __name__ == "__main__":
 
         # Draw a line for each resistance
         plt.plot(e/1000,error,label=str(R)+' $\Omega$')     
-    
+
     # Plot results
+    plt.title(str(d*1e9)+" nm - "+str(l*1e3)+" mm - "+str(t_base*1e6)+" $\mu$K - "+str(pressure)+ " bar")
     plt.xscale('log')
     plt.ylim([0, 100])  
     plt.xlabel('Energy [KeV]')
