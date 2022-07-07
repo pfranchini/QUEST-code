@@ -202,13 +202,15 @@ if __name__ == "__main__":
     print()
     print("Temperature: ",t_base*1e6, " uk")
     print("Diameter:    ",d*1e9," nm")
+    print("Length:      ",l*1e3, "mm")
     print("Pressure:    ",pressure, "bar")
     print("T/Tc:        ",t_base/temperature_critical_superfluid(pressure))
 
     energy= 10000
     delta, _ = DeltaWidth_from_Energy(energy,pressure,t_base)
     
-    print("Thermal motion energy: ",alpha*Fermi_momentum(pressure)/np.sqrt(l*m*Boltzmann_const*t_base), "eV")
+    print("Thermal motion energy: ",alpha*Fermi_momentum(pressure)/np.sqrt(l*m*Boltzmann_const*t_base)*Width_from_Temperature(t_base,pressure)
+, "eV")
 
     # Base width vs pressure
     Pressure = np.array([])  # [bar]
@@ -219,12 +221,13 @@ if __name__ == "__main__":
 
     plt.title(str(d*1e9)+" nm - "+str(l*1e3)+" mm - "+str(t_base*1e6)+" $\mu$K")
     plt.plot(Pressure, Width)
+    plt.yscale('log')
     plt.xlabel('Pressure [bar]')
     plt.ylabel('Base width [Hz]')
     plt.show()
 
-    # Alpha width vs pressure
     '''
+    # Alpha width vs pressure
     Pressure = np.array([])  # [bar]
     Alpha = np.array([])  # [Hz]
     for p in np.arange(0, 30, 1):
@@ -255,7 +258,7 @@ if __name__ == "__main__":
         plt.plot(Pressure, Resolution, label=str(R)+' $\Omega$')
 
     plt.title(str(d*1e9)+" nm - "+str(l*1e3)+" mm - "+str(t_base*1e6)+" $\mu$K")
-    plt.yscale('log')
+#    plt.yscale('log')
     plt.xlabel('Pressure [bar]')
     plt.ylabel('Resolution [Hz]')
     #plt.axhline(y=thermal_motion, color='grey', linestyle='-')
@@ -281,8 +284,9 @@ if __name__ == "__main__":
         # Threshold from dW for field corresponding to the minimum 
         print("  Threshold: ",alpha*SQUID_Resolution(pressure,Field[Resolution.argmin()],R), "eV")
 
-    thermal_motion=Fermi_momentum(pressure)/np.sqrt(l*m*Boltzmann_const*t_base)
-    
+    thermal_motion=Fermi_momentum(pressure)/np.sqrt(l*m*Boltzmann_const*t_base)*Width_from_Temperature(t_base,pressure)
+
+    plt.title(str(d*1e9)+" nm - "+str(l*1e3)+" mm - "+str(t_base*1e6)+" $\mu$K - "+str(pressure)+ " bar")
     plt.xscale('log')
     plt.yscale('log')
     plt.xlabel('Magnetic field [T]')
@@ -341,7 +345,8 @@ if __name__ == "__main__":
         error = np.array([])
         e = np.array([])
 
-        Run_Toy(10, 900, 10)
+        Run_Toy(1, 100, 10)
+        Run_Toy(100, 900, 10)
         Run_Toy(1000, 9000, 500)
         Run_Toy(10000, 100000, 2000)
 

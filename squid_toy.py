@@ -27,7 +27,6 @@ from scipy.stats import norm
 # import Tsepelin code
 exec(open("mod_helium3.py").read())
 
-
 ## Parameters ################################################
 
 volume = 1e-6      # [m^3] Helium-3 cell
@@ -128,8 +127,8 @@ def df(_t,_fb,_d): # time, base width, delta (delta width)
 def Voltage_Error(_fb): # base width
     Z=l*np.power(B,2)/(2*np.pi*m*_fb)
     v_rms = np.sqrt( (np.power(Z+R,2) + np.power(w0*L,2))*S*np.pi*_fb/2/np.power(M,2) + 4*Boltzmann_const*t_base*R*np.pi*_fb/2 + Boltzmann_const*t_base*l*np.power(B,2)/m ) # [V]
-    nep = 0.250 # [Hz] Noise Equivalent Power
-    return v_rms*np.sqrt(0.250)   #nep)/np.sqrt(np.pi*_fb/2)
+    nep = 0.250 # Noise Equivalent Power in units of bandwidth
+    return v_rms*np.sqrt(nep)
 
 
 ###########################################################
@@ -168,12 +167,6 @@ def Toy(energy):
         for j in range(len(deltaf)):
             deltaf[j] = np.random.normal(deltaf[j],np.power(deltaf[j],2)/(v_h*f_base)*Voltage_Error(f_base), 1)
 
-        # Random noise    
-        #noise = np.random.normal(0, 1e-3, len(t))
-        #deltaf = deltaf + noise
-        #plt.plot(t, deltaf)
-        #plt.show()
-        
         # Fit the noise'd distribution        
         popt, pcov = curve_fit(df,t,deltaf)
         # errors on base width and width increase
@@ -256,7 +249,7 @@ def Run_Toy(start_energy, end_energy, step):
 if __name__ == "__main__":
 
     # Output file
-    f = open("error.txt", "w")
+    f = open("squid_toy-error.txt", "w")
     print("# energy[ev]","error[%]",file=f)
 
     # Parameters used
@@ -280,16 +273,19 @@ if __name__ == "__main__":
     error = np.array([])
     e = np.array([])
 
-#    Run_Toy(1, 100, 10)
+    Run_Toy(1, 9, 1)
+    Run_Toy(10, 90, 10) 
     Run_Toy(100, 900, 50)
     Run_Toy(1000, 9000, 500)
     Run_Toy(10000, 100000, 2000)
 
+    f.close()
+    
     # Plot results
-    plt.title(str(d*1e9)+" nm - "+str(l*1e3)+" mm - "+str(t_base*1e6)+" $\mu$K")
+    plt.title(str(d*1e9)+" nm - "+str(l*1e3)+" mm - "+str(t_base*1e6)+" $\mu$K - "+str(pressure)+ " bar")
     plt.plot(e/1000,error, linestyle='', marker='o', color="black")
     plt.xscale('log')
-    plt.ylim([0, 100])  
+    plt.ylim([0, 3])  
     plt.xlabel('Energy [KeV]')
     plt.ylabel('Error [%]')
     plt.savefig('error'+str(d*1e9)+'.pdf')
@@ -301,4 +297,4 @@ if __name__ == "__main__":
     #_ = Toy(10000);
 
     
-    f.close()
+

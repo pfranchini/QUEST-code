@@ -41,13 +41,14 @@ d = 200e-9;      # [m] vibrating wire diameter
 t_b = 5.00  # [s] decay constant
 #t_w = 0.77  # [s] response time - IS NOT CONSTANT -
 
-v_h = np.pi/2*1e-7  # [V] Base voltage height for a v=1mm/s
-v_rms = 3.5*1e-9    # [V] Error on voltage measurement for a lock-in amplifier
+amp=100 # gain of the voltage amplifier
+v_h = amp*np.pi/2*1e-7  # [V] Base voltage height for a v=1mm/s
+v_rms = 7.9*1e-9    # [V] Error on voltage measurement for a lock-in amplifier
 # v_drive=14.5e-3
 
 #=============================================================
 
-N = 1000  # number of toys
+N = 500  # number of toys
 verbose=False # verbosity for plotting
 
 
@@ -255,11 +256,13 @@ if __name__ == "__main__":
     error = np.array([])
     e = np.array([])
 
+    Run_Toy(1, 100, 10)
     Run_Toy(100, 900, 50)
     Run_Toy(1000, 9000, 500)
     Run_Toy(10000, 100000, 2000)
 
     # Plot results
+    plt.title(str(d*1e9)+" nm - "+str(t_base*1e6)+" $\mu$K - "+str(pressure)+ " bar")
     plt.plot(e/1000,error, linestyle='', marker='o', color="black")
     plt.xscale('log')
     plt.ylim([0, 100])  

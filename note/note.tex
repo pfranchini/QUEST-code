@@ -316,6 +316,22 @@ V_H(t) = \frac{\pi}{4} B D v(t)
 (where the geometrical constant $\pi/4$ corresponds to a semi-loop), $V_{H_{\mathrm{base}}} \simeq 157\,nV$ 
 
 
+\section{SQUID readout}
+We consider the circuit noise as
+
+\begin{equation}
+V_{RMS}  = \sqrt{\big|Z(\omega_0) + R + i\omega_0 L_i\big|^2 S_\phi \Delta f / M_i^2 + 4 k_B T R \Delta f + k_B T l B^2 / m}
+\end{equation}
+
+so the error on the voltage measurement, rescaled for the bandwidth $\pi f_\mathrm{base}/2$ corresponding to the base width is
+
+\begin{equation}
+\sigma_{V_H} = \frac{V_{RMS}}{\sqrt{\pi f_\mathrm{base}/2}} \sqrt{\mathrm{0.250 \cdot \pi f_\mathrm{base}/2}}
+\end{equation}
+
+
+
+
 
 % ============================================
 
@@ -328,7 +344,7 @@ V_H(t) = \frac{\pi}{4} B D v(t)
 \bibitem{lawson} Lawson, C.R., A Novel Measurement Device for use in Multiphase Helium-3 and 4 at Ultra-Low Temperatures, MPHys thesis (2014)
 \bibitem{winkelmann} Winkelmann et al, Bolometric calibration of a superfluid 3He detector for Dark Matter search: Direct measurement of the scintillated energy fraction for
 neutron, electron and muon events (2007)
-
+\bibitem{lev} Lev, L., SQUID readout of a vibrating nanowire (2022)
 \end{thebibliography}
 
 \end{document}
