@@ -237,7 +237,7 @@ if __name__ == "__main__":
     plt.show()
     '''
 
-    # Dependences on vire diameter, for a certain base temperature and energy
+    # Dependences on wire diameter, for a certain base temperature and energy
     t0 = 150e-6   # fix the temperature
     energy= 10000 # fit the energy
 
@@ -286,6 +286,7 @@ if __name__ == "__main__":
     plt.title('Sensitivity vs Wire diameter ('+str(pressure)+' bar - '+str(t0*1e6)+' $\mu$K)')
     plt.xlabel('diameter [nm]')
     plt.ylabel('$\Delta(\Delta f)$/energy [mHz/keV]')
+    plt.xlim([0, 10e3])   
     plt.savefig('output/Sensitivity_vs_diameter-'+str(int(pressure))+'bar.pdf')
     plt.show()
 

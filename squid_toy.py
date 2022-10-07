@@ -152,6 +152,7 @@ def Toy(energy):
     print("Bandwidth: ",np.pi*f_base/2, " Hz")
     print("Voltage error:",Voltage_Error(f_base))
 
+    
     t = np.linspace(0, 50, 200) # time
 
     base_toy = np.array([])  # base width distribution
@@ -257,6 +258,7 @@ if __name__ == "__main__":
     print("Temperature: ",t_base*1e6, " uk")
     print("Diameter:    ",d*1e9," nm")
     print("Pressure:    ",pressure, "bar")
+    print("T/Tc:        ",t_base/temperature_critical_superfluid(pressure))
 
     # Calculates alpha_prime for the error propagation
     global alpha_prime
@@ -273,6 +275,7 @@ if __name__ == "__main__":
     error = np.array([])
     e = np.array([])
 
+    Run_Toy(1e-2, 0.9, 1e-2)
     Run_Toy(1, 9, 1)
     Run_Toy(10, 90, 10) 
     Run_Toy(100, 900, 50)
@@ -285,7 +288,7 @@ if __name__ == "__main__":
     plt.title(str(d*1e9)+" nm - "+str(l*1e3)+" mm - "+str(t_base*1e6)+" $\mu$K - "+str(pressure)+ " bar")
     plt.plot(e/1000,error, linestyle='', marker='o', color="black")
     plt.xscale('log')
-    plt.ylim([0, 3])  
+    #plt.ylim([0, 3])  
     plt.xlabel('Energy [KeV]')
     plt.ylabel('Error [%]')
     plt.savefig('error'+str(d*1e9)+'.pdf')

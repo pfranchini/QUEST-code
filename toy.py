@@ -1,5 +1,6 @@
 '''
 Toy MC simulation for the bolometer response
+using the LOCKIN amplifier
 
 Input:
  - Energy
@@ -41,7 +42,7 @@ d = 200e-9;      # [m] vibrating wire diameter
 t_b = 5.00  # [s] decay constant
 #t_w = 0.77  # [s] response time - IS NOT CONSTANT -
 
-amp=100 # gain of the voltage amplifier
+amp=100 # gain of the voltage cold amplifier
 v_h = amp*np.pi/2*1e-7  # [V] Base voltage height for a v=1mm/s
 v_rms = 7.9*1e-9    # [V] Error on voltage measurement for a lock-in amplifier
 # v_drive=14.5e-3
