@@ -56,7 +56,7 @@ verbose=False  # verbosity for plotting
 
 ## SQUID parameters ==========================================                                                                                                             
 
-B = 30.0e-3 #4e-3 # T
+B = 4e-3 # T
 R = 1 # Ohm
 w0 = 5000  # Hz
 L = 1.5e-6 # H
@@ -246,8 +246,8 @@ def Run_Toy_Diameter(start, end, step, _pressure,_ttc,_diameter, _f):
     global error
     global value
 
+    _temperature=_ttc*temperature_critical_superfluid(_pressure)
     for v in np.arange(start, end, step):
-        _temperature=_ttc*temperature_critical_superfluid(v)
         sigma = Toy(energy,_pressure,_temperature,v)
         print("Error:", sigma,"eV, ", sigma/energy*100,"%")
 
@@ -340,7 +340,7 @@ if __name__ == "__main__":
     error = np.array([])
     value = np.array([])
 
-    '''
+
     # Starts the toy simulation for a range of PRESSURES, fixed T/Tc and diameter
     print("\nPRESSURE...")
     diameter = 400e-9;      # [m] vibrating wire diameter
@@ -359,7 +359,7 @@ if __name__ == "__main__":
     plt.show()
 
     f1.close()
-    '''    
+
 
     # Starts the toy simulation for a range of DIAMETERS, fixed T/Tc and pressure
     print("\nDIAMETERS...")

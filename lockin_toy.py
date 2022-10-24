@@ -228,8 +228,8 @@ def Run_Toy_Diameter(start, end, step, _pressure,_ttc,_diameter, _f):
     global error
     global value
 
+    _temperature=_ttc*temperature_critical_superfluid(_pressure)
     for v in np.arange(start, end, step):
-        _temperature=_ttc*temperature_critical_superfluid(v)
         sigma = Toy(energy,_pressure,_temperature,v)
         print("Error:", sigma,"eV, ", sigma/energy*100,"%")
 
