@@ -12,13 +12,13 @@ plt.rcParams.update({'lines.linewidth': 3})
 
 # Pressure:
 
-with open('lockin_toy-error-pressure.txt') as f:
+with open('output/lockin_toy-error-pressure.txt') as f:
     lines = f.readlines()[1:] #skip first line
     x1 = [float(line.split()[0]) for line in lines]
     y1 = [float(line.split()[1]) for line in lines]
 
 
-with open('squid_toy-error-pressure.txt') as f:
+with open('output/squid_toy-error-pressure.txt') as f:
     lines = f.readlines()[1:]
     x2 = [float(line.split()[0]) for line in lines]
     y2 = [float(line.split()[1]) for line in lines]
@@ -40,14 +40,14 @@ x2=np.array([])
 y1=np.array([])
 y2=np.array([])
 
-with open('lockin_toy-error-diameter.txt') as f:
+with open('output/lockin_toy-error-diameter.txt') as f:
     lines = f.readlines()[1:] #skip first line
     for line in lines:
         x1 = np.append(x1, float(line.split()[0]))
         y1 = np.append(y1, float(line.split()[1]))
 
 
-with open('squid_toy-error-diameter.txt') as f:
+with open('output/squid_toy-error-diameter.txt') as f:
     lines = f.readlines()[1:]
     for line in lines:
         x2 = np.append(x2, float(line.split()[0]))
@@ -64,13 +64,13 @@ plt.show()
 
 # T/Tc:
 
-with open('lockin_toy-error-temperature.txt') as f:
+with open('output/lockin_toy-error-temperature.txt') as f:
     lines = f.readlines()[1:] #skip first line
     x1 = [float(line.split()[0]) for line in lines]
     y1 = [float(line.split()[1]) for line in lines]
 
 
-with open('squid_toy-error-temperature.txt') as f:
+with open('output/squid_toy-error-temperature.txt') as f:
     lines = f.readlines()[1:]
     x2 = [float(line.split()[0]) for line in lines]
     y2 = [float(line.split()[1]) for line in lines]

@@ -18,6 +18,10 @@ SQUID readout:
 
 ### Extract energy from Viktor's data:
 ```
-[]$ python fit.py
+[]$ python viktor.py
 ```
 
+### Study of the pulse peak time dependency:
+```
+[]$ python pulse.py -p <pressure [bar]> -d <diameter [m]> -t <relative temperature> -b <decay constant t_b>
+```

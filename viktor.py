@@ -6,6 +6,9 @@ Analysis of Viktor's data
  - Calculates the energy from the width distribution for 
    peaks above 2*rms
 
+Usage:
+  python3 fit.py 
+
 -------------------------
 
 Input:
@@ -58,6 +61,10 @@ t_b = 5.00  # [s] decay constant
 v_h = np.pi/2*1e-7  # [V] Base voltage height for a v=1mm/s
 v_rms = 3.5*1e-9    # [V] Error on voltage measurement for a lock-in amplifier
 # v_drive=14.5e-3
+
+#=============================================================
+
+plot=False
 
 #=============================================================
 
@@ -136,6 +143,7 @@ if __name__ == "__main__":
 
 
     # Reads the data
+    print("Reading file...")
     #with open('/home/franchini/Documents/QUEST/Fridge5_AERO5_Run4_DM13_TWDAQ05_analysed-REDUCED.dat', 'rt') as f:
     with open('/home/franchini/Documents/QUEST/Fridge5_AERO5_Run4_DM13_TWDAQ05_analysed.dat', 'rt') as f:
 
@@ -163,7 +171,7 @@ if __name__ == "__main__":
             
     #=======================================================================
 
-    t = np.array(data['secs'])
+    t_ = np.array(data['secs'])
     width_ = np.array(data['TW27width'])
     temperature_ = np.array(data['TW27temperature'])
 
@@ -173,7 +181,11 @@ if __name__ == "__main__":
 
     rms = np.sqrt(np.mean(width**2))
     print('rms: ',rms)
-    
+
+    t = np.array([])
+    for time in t_:
+        t = np.append(t,float(time))
+        
     temperature = np.array([])
     for temp in temperature_:
         temperature = np.append(temperature,float(temp))
@@ -181,10 +193,11 @@ if __name__ == "__main__":
     t_base = np.nanmean(temperature)
     print("Average temperature:      ",t_base, " K")
 
-    plt.xlabel('time [s]')
-    plt.ylabel('temperature [uK]')
-    plt.plot(t,temperature*1e6)
-    plt.show()
+    if plot:
+        plt.xlabel('time [s]')
+        plt.ylabel('temperature [uK]')
+        plt.plot(t,temperature*1e6)
+        plt.show()
   
     # Base width from the input base temperature                                                                                                                           
     f_base = Width_from_Temperature(t_base,pressure)
@@ -194,18 +207,24 @@ if __name__ == "__main__":
     background = np.nanmean(width)
     print("Background: ",background*1000, " mHz")
 
-    plt.xlabel('time [s]')
-    plt.ylabel('width [Hz]')
-    plt.plot(t,width)
-    plt.show()
+    if plot:
+        plt.xlabel('time [s]')
+        plt.ylabel('width [Hz]')
+        plt.plot(t,width)
+        plt.show()
 
     #Find peaks above 2*rms
+    print("Find peaks...")
     peaks, _ = find_peaks(width, height = 2*rms)
     #p_widths = peak_widths(width, peaks[0])
     #threshold = 0 #0.3 #0.2
     #peaks, _ = find_peaks(width, height=(f_base[0]+threshold))
     
-    print("NUmber of peaks: ",len(peaks))
+    print("Number of peaks: ",len(peaks))
+    print("Start time:      ",max(t), " s")
+    print("Stop time:       ",min(t), " s")
+    print("Total time:      ",max(t)-min(t), " s")
+    print("Rate:            ",len(peaks)/(max(t)-min(t)), " Hz")
     
     _, alpha = DeltaWidth_from_Energy(1000,pressure,t_base)
     print("Alpha: ",alpha)
@@ -213,26 +232,27 @@ if __name__ == "__main__":
     # Energy from the model calibration
     energy = (width[peaks]-background)*alpha
 
-    # Width with peaks
-    plt.plot(width)
-    plt.plot(peaks, width[peaks], "x")
-    plt.plot(np.zeros_like(width)+2*rms, "--", color="gray")
-    plt.show()
-
-    # Energy vs time
-    plt.plot(t,(width-background)*alpha/1e3)
-    plt.xlabel('time [s]')
-    plt.ylabel('energy [keV]')
-    plt.show()
-
-    # Energy distribution
-    plt.hist(energy/1e3, 100, range=[0, 5000])
-    plt.yscale('log')
-    plt.xlim([0, 5000])    
-    plt.xlabel('Energy [keV]')
-    plt.axvline(x=1311, linestyle="--", color="gray")  # K-40: beta
-    plt.axvline(x=728.8, linestyle="--", color="gray") # Pb-214: beta
-    plt.show()     
+    if plot:
+        # Width with peaks
+        plt.plot(width)
+        plt.plot(peaks, width[peaks], "x")
+        plt.plot(np.zeros_like(width)+2*rms, "--", color="gray")
+        plt.show()
+        
+        # Energy vs time
+        plt.plot(t,(width-background)*alpha/1e3)
+        plt.xlabel('time [s]')
+        plt.ylabel('energy [keV]')
+        plt.show()
+        
+        # Energy distribution
+        plt.hist(energy/1e3, 100, range=[0, 5000])
+        plt.yscale('log')
+        plt.xlim([0, 5000])    
+        plt.xlabel('Energy [keV]')
+        plt.axvline(x=1311, linestyle="--", color="gray")  # K-40: beta
+        plt.axvline(x=728.8, linestyle="--", color="gray") # Pb-214: beta
+        plt.show()     
 
     # Print Energy array in a file
     f = open("energies.txt", "w")

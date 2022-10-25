@@ -182,6 +182,10 @@ Considering that there are three main variables, base temperature, pressure of t
   \item The decay time of the oscillating wire is faster for high temperatures (low Kapitza resistance), so low temperatures might cause some pile-up of events
 \end{itemize}
 
+\subsection{Sensitivity dependence}
+
+If we define the sensitivity as the width variation per deposited energy.....
+
 \begin{figure}[!ht]
   \begin{center}
     \includegraphics[width=0.69\textwidth]{Sensitivity_vs_diameter-0bar}
@@ -330,6 +334,21 @@ so the error on the voltage measurement, rescaled for the bandwidth $\pi f_\math
 \end{equation}
 
 
+
+\section{Readout}
+
+We can study the position of the peak of the energy deposition pulse as in figure \ref{fig:winkelmann}; considering the pulse starting at $t=0$, the maximum correspond to
+\begin{equation}
+t' = \frac{\tau_b \tau_w}{\tau_w - \tau_b} \ln \frac{\tau_w}{\tau_b}
+\end{equation}
+so it depends on the decay constant and on the response time (which depends on the base width).
+A wire too fast will not be read in time, so the minimum should coincide with the time constant of the readout.
+A wire too slow would cause some pile-up of events, if the maximum time is slower than the reciprocal of the rate of events.
+
+The rate of events is dominated by the background. The most relevant contribution comes from cosmic rays and cosmic rays induced background, which can be up to one event per minute in absence of any shielding or tagging.
+
+Likely the peak would need to be within a fraction of a second and 10 seconds.
+This is compatible with a hundred nano-meter wire, operated a zero pressure with a relative temperature of 0.1. A thicker wire would require a higher pressure
 
 
 
