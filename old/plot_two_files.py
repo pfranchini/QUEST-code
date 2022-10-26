@@ -1,13 +1,13 @@
 import matplotlib.pyplot as plt
 
-with open('lockin-error-5bar.txt') as f:
-    lines = f.readlines()
+with open('output/lockin-error.txt') as f:
+    lines = f.readlines()[1:]
     x1 = [line.split()[0] for line in lines]
     y1 = [line.split()[1] for line in lines]
 
 
-with open('squid_toy-error.txt') as f:
-    lines = f.readlines()
+with open('output/squid_toy-error.txt') as f:
+    lines = f.readlines()[1:]
     x2 = [line.split()[0] for line in lines]
     y2 = [line.split()[1] for line in lines]
 

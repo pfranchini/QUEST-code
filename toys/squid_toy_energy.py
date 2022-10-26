@@ -25,7 +25,7 @@ from scipy.optimize import curve_fit
 from scipy.stats import norm
 
 # import Tsepelin code
-exec(open("mod_helium3.py").read())
+exec(open("../mod_helium3.py").read())
 
 ## Parameters ################################################
 
@@ -47,7 +47,7 @@ v_h = np.pi/2*1e-7  # [V] Base voltage height for a v=1mm/s
 
 #=============================================================
 
-N = 100  # number of toys
+N = 1000  # number of toys
 verbose=False # verbosity for plotting
 
 ## SQUID parameters ==========================================                                                                                                             
@@ -250,7 +250,7 @@ def Run_Toy(start_energy, end_energy, step):
 if __name__ == "__main__":
 
     # Output file
-    f = open("squid_toy-error.txt", "w")
+    f = open("output/squid_toy-error.txt", "w")
     print("# energy[ev]","error[%]",file=f)
 
     # Parameters used
@@ -291,8 +291,7 @@ if __name__ == "__main__":
     #plt.ylim([0, 3])  
     plt.xlabel('Energy [KeV]')
     plt.ylabel('Error [%]')
-    plt.savefig('error'+str(d*1e9)+'.pdf')
-    plt.savefig('error'+str(d*1e9)+'.png')
+    plt.savefig('error-squid'+str(d*1e9)+'.pdf')
     plt.show()
 
 

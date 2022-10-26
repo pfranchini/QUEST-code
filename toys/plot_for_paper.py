@@ -2,13 +2,39 @@
 Plots on the same plot the Error vs Pressure, Diameter, T/Tc for the
 lock-in amplfier and the SQUID readout toys produce before and saved
 in a text file.
+
+Input: txt files produced by the toy scripts.
 '''
 
 import numpy as np
 import matplotlib.pyplot as plt
 
-plt.rcParams.update({'font.size': 14})
-plt.rcParams.update({'lines.linewidth': 3})
+#plt.rcParams.update({'font.size': 14})
+#plt.rcParams.update({'lines.linewidth': 3})
+
+
+# Energy:
+
+with open('output/lockin-error.txt') as f:
+    lines = f.readlines()[1:]
+    x1 = [line.split()[0] for line in lines]
+    y1 = [line.split()[1] for line in lines]
+
+
+with open('output/squid_toy-error.txt') as f:
+    lines = f.readlines()[1:]
+    x2 = [line.split()[0] for line in lines]
+    y2 = [line.split()[1] for line in lines]
+
+plt.plot(x1,y1,label='Lock-in amplifier')
+plt.plot(x2,y2,label='SQUID readout')
+plt.xlabel('Energy [eV]')
+plt.ylabel('Error [%]')
+plt.xscale('log')
+plt.yscale('log')
+plt.legend()
+plt.savefig("Error_comparison.pdf")
+plt.show()
 
 # Pressure:
 

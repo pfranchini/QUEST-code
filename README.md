@@ -6,12 +6,7 @@
 code.py -p <pressure [bar]> -d <diameter [m]>
 ```
 
-### Generates the error for the energy deposition measurement, for an energy range:
-```
-[]$ python toy.py
-```
-
-SQUID readout:
+### SQUID readout plots as in Lev's note:
 ```
 []% python3 squid.py
 ```
@@ -25,3 +20,19 @@ SQUID readout:
 ```
 []$ python pulse.py -p <pressure [bar]> -d <diameter [m]> -t <relative temperature> -b <decay constant t_b>
 ```
+
+## Toys:
+
+### Generates the error for the energy deposition measurement, for an energy range:
+```
+[]$ python lockin_toy_energy.py
+[]$ squid_toy_energy.py
+```
+
+### Generates the error for diameter, pressure and temperature, for the fixed energy deposition measurement:
+```
+[]$ python lockin_toy.py
+[]$ squid_toy.py
+```
+
+

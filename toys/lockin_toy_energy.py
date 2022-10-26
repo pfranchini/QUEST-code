@@ -25,8 +25,7 @@ from scipy.optimize import curve_fit
 from scipy.stats import norm
 
 # import Tsepelin code
-exec(open("mod_helium3.py").read())
-
+exec(open("../mod_helium3.py").read())
 
 ## Parameters ################################################
 
@@ -39,6 +38,8 @@ pressure = 5     # [bar] pressure
 t_base = 150e-6  # [K] base temperature
 d = 200e-9;      # [m] vibrating wire diameter
 
+#=============================================================
+
 t_b = 5.00  # [s] decay constant
 #t_w = 0.77  # [s] response time - IS NOT CONSTANT -
 
@@ -49,7 +50,7 @@ v_rms = 7.9*1e-9    # [V] Error on voltage measurement for a lock-in amplifier
 
 #=============================================================
 
-N = 500  # number of toys
+N = 1000  # number of toys
 verbose=False # verbosity for plotting
 
 
@@ -233,7 +234,7 @@ def Run_Toy(start_energy, end_energy, step):
 if __name__ == "__main__":
 
     # Output file
-    f = open("error.txt", "w")
+    f = open("output/lockin-error.txt", "w")
     print("# energy[ev]","error[%]",file=f)
 
     # Parameters used
@@ -269,8 +270,7 @@ if __name__ == "__main__":
     plt.ylim([0, 100])  
     plt.xlabel('Energy [KeV]')
     plt.ylabel('Error [%]')
-    plt.savefig('error'+str(d*1e9)+'.pdf')
-    plt.savefig('error'+str(d*1e9)+'.png')
+    plt.savefig('error-lockin'+str(d*1e9)+'.png')
     plt.show()
 
 
