@@ -26,13 +26,17 @@ code.py -p <pressure [bar]> -d <diameter [m]>
 ### Generates the error for the energy deposition measurement, for an energy range:
 ```
 []$ python lockin_toy_energy.py
-[]$ squid_toy_energy.py
+[]$ python squid_toy_energy.py
 ```
 
 ### Generates the error for diameter, pressure and temperature, for the fixed energy deposition measurement:
 ```
 []$ python lockin_toy.py
-[]$ squid_toy.py
+[]$ python squid_toy.py
 ```
 
+### Merges toys text output into plots for the paper, with lockin and squid on the same plot
+```
+[]$ python plot_for_paper.py
+```
 
