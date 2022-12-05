@@ -35,7 +35,8 @@ density = 6.05e3;  # [kg/m^3] Niobium-Titanium (NbTi)
 #=============================================================
 
 pressure = 5     # [bar] pressure
-t_base = 150e-6  # [K] base temperature
+ttc=0.1
+#t_base = 150e-6  # [K] base temperature
 d = 200e-9;      # [m] vibrating wire diameter
 
 #=============================================================
@@ -232,6 +233,9 @@ def Run_Toy(start_energy, end_energy, step):
 
 
 if __name__ == "__main__":
+
+    # Base temperature defined from the T/Tc
+    t_base=ttc*temperature_critical_superfluid(pressure)
 
     # Output file
     f = open("output/lockin-error.txt", "w")

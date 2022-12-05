@@ -9,8 +9,8 @@ Input: txt files produced by the toy scripts.
 import numpy as np
 import matplotlib.pyplot as plt
 
-#plt.rcParams.update({'font.size': 14})
-#plt.rcParams.update({'lines.linewidth': 3})
+plt.rcParams.update({'font.size': 14})
+plt.rcParams.update({'lines.linewidth': 3})
 
 
 # Energy:

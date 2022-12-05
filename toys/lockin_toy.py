@@ -39,7 +39,7 @@ density = 6.05e3;  # [kg/m^3] Niobium-Titanium (NbTi)
 #=============================================================
 
 pressure = 5     # [bar] pressure
-temperature = 150e-6    # [K] base temperature
+#temperature = 150e-6    # [K] base temperature - useless, we need just T/Tc
 ttc=0.1  # T/Tc
 diameter = 200e-9;      # [m] vibrating wire diameter
 energy = 10;   # [eV] deposited energy
@@ -56,6 +56,7 @@ v_rms = 7.9*1e-9    # [V] Error on voltage measurement for a lock-in amplifier
 N = 1000  # number of toys
 verbose=False  # verbosity for plotting
 
+unused = 0.0
 ## LOCKIN parameters ==========================================                                                                                                            
 
 # ===========================================================
@@ -283,7 +284,7 @@ if __name__ == "__main__":
     diameter = 200e-9;      # [m] vibrating wire diameter
     ttc=0.1  # T/Tc
 
-    Run_Toy_Pressure(1, 30, 1, pressure, ttc, diameter, f1)
+    Run_Toy_Pressure(1, 30, 1, unused, ttc, diameter, f1)
 
     # Plot results
     plt.title(str(diameter*1e9)+' nm - T/Tc='+str(ttc))
@@ -301,11 +302,11 @@ if __name__ == "__main__":
     # Starts the toy simulation for a range of DIAMETERS, fixed T/Tc and pressure
     print("\nDIAMETERS...")
     pressure = 5     # [bar] pressure
-    ttc=0.15  # T/Tc
+    ttc=0.1  # T/Tc
 
     error = np.array([])
     value = np.array([])
-    Run_Toy_Diameter(50e-9, 1000e-9, 100e-9, pressure, ttc, diameter, f2)
+    Run_Toy_Diameter(50e-9, 1000e-9, 100e-9, pressure, ttc, unused, f2)
 
     # Plot results
     plt.title(str(pressure)+' bar - T/Tc='+str(ttc))
@@ -327,7 +328,7 @@ if __name__ == "__main__":
     
     error = np.array([])
     value = np.array([])
-    Run_Toy_Temperature(0.1, 0.18, 0.01, pressure, temperature, diameter, f3)
+    Run_Toy_Temperature(0.1, 0.18, 0.01, pressure, unused, diameter, f3)
 
     # Plot results
     plt.title(str(pressure)+' bar - '+str(diameter*1e9)+' nm')
