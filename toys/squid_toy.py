@@ -58,7 +58,7 @@ unused=0.0
 
 ## SQUID parameters ==========================================                                                                                                             
 
-B = 4e-3 # T
+B = 0.4e-3 # T
 R = 1 # Ohm
 w0 = 5000  # Hz
 L = 1.5e-6 # H
@@ -328,7 +328,7 @@ if __name__ == "__main__":
     f3 = open("output/squid_toy-error-temperature.txt", "w")
     print("# pressure[bar]","error[%]",file=f1)
     print("# diameter[m]","error[%]",file=f2)
-    print("# temperature[K]","error[%]",file=f3)
+    print("# T/Tc","error[%]",file=f3)
 
     # Parameters used
     print("\nEnergy     : ",energy, " eV")

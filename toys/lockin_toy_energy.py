@@ -132,7 +132,8 @@ def Toy(energy):
     print("Width variation: ",delta*1000,  " mHz")
     print("t_w: ",t_w, "s")
     
-    t = np.linspace(0, 50, 200) # time
+    #t = np.linspace(0, 50, 200) # time
+    t = np.linspace(4.5, 50, 1000) # time
 
     base_toy = np.array([])  # base width distribution
     delta_toy = np.array([]) # delta width distribution

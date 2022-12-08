@@ -267,7 +267,7 @@ if __name__ == "__main__":
     f3 = open("output/lockin_toy-error-temperature.txt", "w")
     print("# pressure[bar]","error[%]",file=f1)
     print("# diameter[m]","error[%]",file=f2)
-    print("# temperature[K]","error[%]",file=f3)
+    print("# T/Tc","error[%]",file=f3)
 
     # Parameters used
     print("\nEnergy     : ",energy, " eV")

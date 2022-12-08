@@ -154,7 +154,8 @@ def Toy(energy):
     print("Voltage error:",Voltage_Error(f_base))
 
     
-    t = np.linspace(0, 50, 200) # time
+    # t = np.linspace(0, 50, 1000) # time
+    t = np.linspace(4.5, 50, 1000) # time
 
     base_toy = np.array([])  # base width distribution
     delta_toy = np.array([]) # delta width distribution
