@@ -1,0 +1,290 @@
+'''
+Toy MC simulation for the bolometer response
+using the QP SHOT noise
+
+Input:
+ - Energy
+
+ - Helium-3 Pressure: pressure
+ - Base temperature: t_base
+ - Wire diameter: d
+ - Wire length: l
+ - Reponse time; t_w
+ - Decay constant: t_b
+
+Output:
+ - Error on Energy 
+
+'''
+
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.mlab as mlab
+from scipy.optimize import curve_fit
+from scipy.stats import norm
+
+# import Tsepelin code
+exec(open("../mod_helium3.py").read())
+
+plt.rcParams.update({'font.size': 14})
+plt.rcParams.update({'lines.linewidth': 3})
+plt.rcParams.update({'xtick.direction': 'in'})
+plt.rcParams.update({'ytick.direction': 'in'})
+
+## Parameters ################################################
+
+volume = 1e-6      # [m^3] Helium-3 cell
+density = 6.05e3;  # [kg/m^3] Niobium-Titanium (NbTi)   
+
+#=============================================================
+
+pressure = 0     # [bar] pressure
+ttc=0.1
+#t_base = 150e-6 # [K] base temperature
+d = 400e-9;      # [m] vibrating wire diameter
+l = 2e-3         # [m] vibrating wire lenght
+
+#=============================================================
+
+t_b = 5.00  # [s] decay constant
+#t_w = 0.77  # [s] response time - IS NOT CONSTANT -
+
+#=============================================================
+
+N = 1000  # number of toys
+verbose=False # verbosity for plotting
+
+
+## More routines: ###########################################
+
+def Width_from_Temperature(Temperature,PressureBar):
+    
+    gap = energy_gap_in_low_temp_limit(PressureBar)
+    width=np.power(Fermi_momentum(PressureBar),2)*Fermi_velocity(PressureBar)*density_of_states(PressureBar)/(2*density*np.pi*d)*np.exp(-gap/(Boltzmann_const*Temperature))
+    return width
+
+def Temperature_from_Width(Width,PressureBar):
+    
+    gap = energy_gap_in_low_temp_limit(PressureBar)
+    temperature=-gap/(Boltzmann_const*np.log( Width*2*density*np.pi*d/(np.power(Fermi_momentum(PressureBar),2)*Fermi_velocity(PressureBar)*density_of_states(PressureBar)))\
+    )
+    return temperature
+
+def DeltaWidth_from_Energy(E,PressureBar,BaseTemperature):
+    # Find delta width from the input energy deposition for a certain base temperature
+
+    # find fit line for the Width variation vs Deposited energy for the base temperature
+    W0=Width_from_Temperature(BaseTemperature,PressureBar)
+        
+    DQ = np.array([])  # delta energy [eV]
+    DW = np.array([])  # delta width [Hz]    
+    
+    #for dw in np.arange(0,2.5,0.001):  # Delta(Deltaf)
+    for dw in np.arange(0,2.5,0.01):  # Delta(Deltaf)  FASTER
+        T2= Temperature_from_Width(W0+dw,PressureBar)
+        T1= Temperature_from_Width(W0,PressureBar)
+        DQ = np.append(DQ,(heat_capacity_Cv_B_phase_intergral_from_0(T2, PressureBar) - heat_capacity_Cv_B_phase_intergral_from_0(T1, PressureBar)) * volume * 6.242e+18) # [eV]
+        DW = np.append(DW,dw)
+        
+    # Draw the plot 
+    '''
+    if verbose and E==10000: 
+        plt.plot(DQ/1e3,DW*1e3,label='DQvsDW')
+        plt.title('Width variation vs Deposited energy')
+        plt.xlim([0, 100])
+        plt.xlabel('$\Delta$Q [KeV]')
+        plt.ylabel('$\Delta(\Delta f)$ [mHz]')
+        plt.show()
+    '''
+    
+    # Fit line to extract the slope alpha: DQ = alpha * DW
+    global alpha
+    alpha, _ = np.polyfit(DW, DQ, 1)
+    
+    # Input delta width from input energy
+    deltawidth = E/alpha
+       
+    return deltawidth, alpha
+
+###########################################################
+
+# Define the noise function for shot-noise
+def noise(_deltaf,_fb,_pressure,_temperature):
+    noise = _deltaf/np.sqrt( (Fermi_velocity(_pressure)**2*mass_effective(_pressure)*Fermi_momentum(_pressure)*l*d*Boltzmann_const*_temperature/(2*_fb*np.pi*Plankbar_const**2)*np.exp(-gap/(Boltzmann_const*_temperature))) )  # shot-noise as in eq.37
+    return noise
+
+# Define signal fit function Dw vs time
+def df(_t,_fb,_d): # time, base width, delta (delta width)
+    _t_w = 1/(np.pi*_fb)
+    _t1=5
+    return _fb + np.heaviside(_t-_t1,1)*(_d*np.power(t_b/_t_w,_t_w/(t_b-_t_w))*(t_b/(t_b-_t_w))*(np.exp(-(_t-_t1)/t_b) - np.exp(-(_t-_t1)/_t_w)))
+
+###########################################################
+
+def Toy(energy):
+
+    print()
+    print("Energy:      ",str(energy), " eV")
+    # Input delta(width) from input energy
+    delta, _ = DeltaWidth_from_Energy(energy,pressure,t_base)
+    
+    # Base width from the input base temperature
+    f_base = Width_from_Temperature(t_base,pressure)
+
+    # Response time
+    t_w = 1/(np.pi*f_base)
+    
+    print("Base width:      ",f_base*1000, " mHz")
+    print("Width variation: ",delta*1000,  " mHz")
+    print("t_w: ",t_w, "s")
+    
+    #t = np.linspace(0, 50, 200) # time
+    t = np.linspace(4.5, 50, 1000) # time
+
+    base_toy = np.array([])  # base width distribution
+    delta_toy = np.array([]) # delta width distribution
+
+    # Repeat the fit N times
+    for i in range(N):
+
+        # Delta f vs time
+        deltaf = f_base + np.heaviside(t-5,1)*(delta*np.power(t_b/t_w,t_w/(t_b-t_w))*(t_b/(t_b - t_w))*(np.exp(-(t-5)/t_b) - np.exp(-(t-5)/t_w)))
+
+        # Add noise based on QP shot noise
+        for j in range(len(deltaf)):
+            deltaf[j] = np.random.normal(deltaf[j],noise(deltaf[j],f_base,pressure,t_base), 1)
+
+        # Random noise    
+        #noise = np.random.normal(0, 1e-3, len(t))
+        #deltaf = deltaf + noise
+        #plt.plot(t, deltaf)
+        #plt.show()
+        
+        # Fit the noise'd distribution        
+        popt, pcov = curve_fit(df,t,deltaf)
+        # errors on base width and width increase
+        base_fit, delta_fit = popt
+
+        delta_toy = np.append(delta_toy,delta_fit)
+        base_toy = np.append(base_toy,base_fit)
+
+        
+    if verbose and energy==1000:
+        # Plot deltaf(t)
+        plt.plot(t, deltaf*1e3,linestyle='',marker='.', color="black")
+        plt.plot(t, df(t,*popt)*1e3)
+        plt.xlabel('time [s]')
+        plt.ylabel('$\Delta f$ [mHz]')
+        plt.savefig('deltaf_toy-example'+str(d*1e9)+'.pdf')
+        plt.show()
+
+    if verbose and energy==1000:
+        # Plot voltage(t)
+        plt.plot(t, v_h*f_base/deltaf*1e9,linestyle='',marker='.', color="black")
+        plt.plot(t, v_h*f_base/df(t,*popt)*1e9)
+        plt.xlabel('time [s]')
+        plt.ylabel('$V_H$ [nV]')
+        plt.savefig('voltage_toy-example'+str(d*1e9)+'.pdf')
+        plt.show()
+
+    # Plot toy energy distribution
+    if verbose and energy==10000:
+        plt.hist(delta_toy*alpha/1000,100)
+        plt.xlabel('Energy [KeV]')
+        plt.ylabel('Entries')
+        plt.savefig('energy_distribution'+str(d*1e9)+'.pdf')
+        plt.show()
+
+    # Plot toy base distribution
+    if verbose and energy==10000:
+        plt.hist(base_toy,100)
+        plt.xlabel('Base width [Hz]')
+        plt.ylabel('Entries')
+        plt.savefig('base_width_distribution'+str(d*1e9)+'.pdf')
+        plt.show()
+
+
+    ## Gaussian fit for base and delta toy distributions
+    (delta_mu, delta_sigma) = norm.fit(delta_toy)
+    (base_mu, base_sigma) = norm.fit(base_toy)
+
+    print("Fitted base: ",base_mu," ",base_sigma)
+    print("Fitted delta: ",delta_mu," ",delta_sigma)
+
+    print(alpha_prime*delta_mu*base_sigma)
+    print(alpha*delta_sigma)
+    
+    energy_error=  np.sqrt( np.power(alpha_prime*delta_mu*base_sigma,2) + np.power(alpha*delta_sigma,2) )
+#    energy_error=  np.sqrt( np.power(alpha_prime*delta_mu*base_sigma,2) )
+
+    return energy_error
+
+
+def Run_Toy(start_energy, end_energy, step):
+
+    global error
+    global e
+
+    for energy in np.arange(start_energy, end_energy, step):
+
+        sigma_energy = Toy(energy)
+        print(energy, sigma_energy, sigma_energy/energy*100,"%")
+
+        error = np.append(error,sigma_energy/energy*100)
+        e = np.append(e,energy)
+
+        print(energy,*(sigma_energy/energy*100),file=f)
+
+
+###########################################################
+
+
+if __name__ == "__main__":
+
+    # Base temperature defined from the T/Tc
+    t_base=ttc*temperature_critical_superfluid(pressure)
+
+    # Output file
+    f = open("output/shot-error.txt", "w")
+    print("# energy[ev]","error[%]",file=f)
+
+    # Parameters used
+    print()
+    print("Temperature: ",t_base*1e6, " uk")
+    print("Diameter:    ",d*1e9," nm")
+    print("Pressure:    ",pressure, "bar")
+
+    # Calculates alpha_prime for the error propagation
+    global alpha_prime
+    epsilon=1e-9
+    _, alpha1 = DeltaWidth_from_Energy(1000, pressure, t_base - epsilon/2)
+    _, alpha2 = DeltaWidth_from_Energy(1000, pressure, t_base + epsilon/2)
+    gap = energy_gap_in_low_temp_limit(pressure)
+    alpha_prime = (alpha2-alpha1)/epsilon * Boltzmann_const/gap * np.power(t_base,2) * 1/Width_from_Temperature(t_base,pressure)
+    print("alpha_prime",alpha_prime)
+
+    # Single toy run for a defined energy [eV]
+    #_ = Toy(1000);
+    
+    # Starts the toy simulation for a range of energies
+    global error
+    global e
+    error = np.array([])
+    e = np.array([])
+
+    Run_Toy(1, 100, 10)
+    Run_Toy(100, 900, 50)
+    Run_Toy(1000, 9000, 500)
+    Run_Toy(10000, 100000, 2000)
+
+    # Plot results
+    plt.title(str(d*1e9)+" nm - "+str(t_base*1e6)+" $\mu$K - "+str(pressure)+ " bar")
+    plt.plot(e/1000,error, linestyle='', marker='o', color="black")
+    plt.xscale('log')
+    plt.ylim([0, 100])  
+    plt.xlabel('Energy [KeV]')
+    plt.ylabel('Error [%]')
+    plt.savefig('error-shot'+str(d*1e9)+'.png')
+    plt.show()
+
+    f.close()

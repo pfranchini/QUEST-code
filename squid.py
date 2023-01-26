@@ -21,7 +21,8 @@ Input:
  - SQUID parameters
 
 Output:
- - Resolution vs Pressure and T/Tc
+ - Resolution vs Pressure and T/Tc for each noise component
+ - Resolution vs Pressure, with R dependency
  - Resolution vs B, with R dependency
  - Error on Energy, with R dependency
 
@@ -51,6 +52,7 @@ pressure = 5     # [bar] pressure
 TTc = 0.1        # relative temperature
 d = 200e-9       # [m] vibrating wire diameter
 B = 0.4e-3       # [T] magnetic field
+
 #=============================================================
 
 verbose=False # verbosity for plotting
@@ -208,7 +210,7 @@ def Toy(energy):
 
     # Calculate the resolution from eq.8 in the Lev's note on SQUID
     #for field in np.arange(1e-6,1,1e3): 
-    delta_sigma = SQUID_Resolution(pressure,B,R)
+    delta_sigma = SQUID_Resolution(pressure,temperature,B,R)
     
     energy_error=  alpha*delta_sigma
 
@@ -398,7 +400,6 @@ if __name__ == "__main__":
     plt.legend()
     plt.show()
 
-    quit()
 
     # Resolution vs the magnetic field, for different wire/contact resistances
     print("Resolution vs magnetic field...")
@@ -432,6 +433,7 @@ if __name__ == "__main__":
 
 
     # Error for different wire/contact resistances
+    temperature=TTc*temperature_critical_superfluid(pressure)
     print("Error vs energy...")
     for R in (1, 0.1, 0.01, 0.001, 0):
 
@@ -443,7 +445,7 @@ if __name__ == "__main__":
 
         for bfield in np.arange(1e-6, 1, 1e-5):
             Field=np.append(Field,bfield)
-            Resolution=np.append(Resolution,SQUID_Resolution(pressure,bfield,R))
+            Resolution=np.append(Resolution,SQUID_Resolution(pressure,temperature,bfield,R))
 
         # Threshold from dW for field corresponding to the minimum 
         B = Field[Resolution.argmin()]
@@ -460,7 +462,7 @@ if __name__ == "__main__":
         plt.plot(e/1000,error,label=str(R)+' $\Omega$')     
 
     # Plot results
-    plt.title(str(d*1e9)+" nm - "+str(l*1e3)+" mm - "+str(t_base*1e6)+" $\mu$K - "+str(pressure)+ " bar")
+    plt.title(str(d*1e9)+" nm - "+str(l*1e3)+" mm - $T/T_c$="+str(TTc) + " $\mu$K - "+str(pressure)+ " bar")
     plt.xscale('log')
     plt.ylim([0, 100])  
     plt.xlabel('Energy [KeV]')
