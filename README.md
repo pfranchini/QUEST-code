@@ -8,7 +8,7 @@ code.py -p <pressure [bar]> -d <diameter [m]>
 
 ### SQUID readout plots as in Lev's note:
 ```
-[]% python3 squid.py
+[]% python3 squid.py -p <pressure [bar]> -d <diameter [m]> -t <relative temperature> -B <magnetic field>
 ```
 
 ### Extract energy from Viktor's data:
