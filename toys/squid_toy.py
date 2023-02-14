@@ -284,7 +284,7 @@ def Run_Toy_Temperature(start, end, step, _pressure,_temperature,_diameter, _f):
 
 if __name__ == "__main__":
 
-
+    '''
     # Plot voltage error vs PRESSURE (fixed T/Tc, diameter)
     v_error = np.array([])
     pressure = np.array([])
@@ -303,18 +303,17 @@ if __name__ == "__main__":
     plt.yscale('log')
     plt.show()
 
-    
     # Plot voltage error vs DIAMETER
     pressure = 0 
     temperature = 150e-6    # [K] base temperature   
     v_error = np.array([])
-    diameter = np.array([])
+    diam = np.array([])
 
     for d in np.arange(50e-9, 2000e-9, 100e-9):
         #delta, _ = DeltaWidth_from_Energy(energy,p,temperature,diameter)
         v_error = np.append(v_error,Voltage_Error(Width_from_Temperature(temperature,pressure,d),temperature,d))#/delta)
         #v_error = np.append(v_error,delta)
-        diameter = np.append(diameter, d)
+        diam = np.append(diameter, d)
 
     plt.title(str(pressure)+' bar - '+str(l*1e3)+' mm - '+str(temperature*1e6)+" $\mu$K")
     plt.plot(diameter*1e9,v_error, linestyle='', marker='o', color="black")
@@ -322,7 +321,7 @@ if __name__ == "__main__":
     plt.ylabel('Voltage Error [V]')
     plt.yscale('log')
     plt.show()
-
+    '''
     #===================================================
 
     # Output file
@@ -348,10 +347,11 @@ if __name__ == "__main__":
 
     # Starts the toy simulation for a range of PRESSURES, fixed T/Tc and diameter
     print("\nPRESSURE...")
-    diameter = 400e-9;      # [m] vibrating wire diameter
-    ttc=0.1  # T/Tc
+    #diameter = 400e-9;      # [m] vibrating wire diameter
+    #ttc=0.1  # T/Tc
 
     Run_Toy_Pressure(0, 30, 1, unused, ttc, diameter, f1)
+    f1.close()
 
     # Plot results
     plt.title(str(diameter*1e9)+' nm - '+str(l*1e3)+' mm - T/Tc='+str(ttc))
@@ -363,17 +363,17 @@ if __name__ == "__main__":
     plt.savefig('squid-error-pressure.png')
     plt.show()
 
-    f1.close()
 
 
     # Starts the toy simulation for a range of DIAMETERS, fixed T/Tc and pressure
     print("\nDIAMETERS...")
-    pressure = 0     # [bar] pressure
-    ttc=0.1  # T/Tc
+    #pressure = 0     # [bar] pressure
+    #ttc=0.1  # T/Tc
 
     error = np.array([])
     value = np.array([])
-    Run_Toy_Diameter(50e-9, 1000e-9, 100e-9, pressure, ttc, unused, f2)
+    Run_Toy_Diameter(150e-9, 1000e-9, 100e-9, pressure, ttc, unused, f2)
+    f2.close()
 
     # Plot results
     plt.title(str(pressure)+' bar - '+str(l*1e3)+' mm - T/Tc='+str(ttc))
@@ -385,18 +385,18 @@ if __name__ == "__main__":
     plt.savefig('squid-error-diameter.png')
     plt.show()
 
-    f2.close()
 
     
     # Starts the toy simulation for a range of T/Tc
     print("\nT/Tc...")
-    pressure = 0     # [bar] pressure
-    diameter = 400e-9;      # [m] vibrating wire diameter
+    #pressure = 0     # [bar] pressure
+    #diameter = 400e-9;      # [m] vibrating wire diameter
     
     error = np.array([])
     value = np.array([])
     Run_Toy_Temperature(0.1, 0.18, 0.01, pressure, unused, diameter, f3)
-
+    f3.close()
+    
     # Plot results
     plt.title(str(pressure)+' bar - '+str(diameter*1e9)+' nm - '+str(l*1e3)+' mm')
     plt.plot(value,error, linestyle='', marker='o', color="black")
@@ -407,7 +407,7 @@ if __name__ == "__main__":
     plt.savefig('squid-error-temperature.png')
     plt.show()
 
-    f3.close()
+
     
     
 

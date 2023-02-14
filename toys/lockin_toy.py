@@ -285,11 +285,12 @@ if __name__ == "__main__":
 
     # Starts the toy simulation for a range of PRESSURES, fixed T/Tc and diameter
     print("\nPRESSURE...")
-    diameter = 400e-9;      # [m] vibrating wire diameter
-    ttc=0.1  # T/Tc
+    #diameter = 400e-9;      # [m] vibrating wire diameter
+    #ttc=0.1  # T/Tc
 
     Run_Toy_Pressure(0, 30, 1, unused, ttc, diameter, f1)
-
+    f1.close()
+    
     # Plot results
     plt.title(str(diameter*1e9)+' nm - T/Tc='+str(ttc))
     plt.plot(value,error, linestyle='', marker='o', color="black")
@@ -300,18 +301,19 @@ if __name__ == "__main__":
     plt.savefig('lockin-error-pressure.png')
     plt.show()
 
-    f1.close()
 
     
     # Starts the toy simulation for a range of DIAMETERS, fixed T/Tc and pressure
     print("\nDIAMETERS...")
-    pressure = 0     # [bar] pressure
-    ttc=0.1  # T/Tc
+    #pressure = 0     # [bar] pressure
+    #ttc=0.1  # T/Tc
 
     error = np.array([])
     value = np.array([])
-    Run_Toy_Diameter(50e-9, 1000e-9, 100e-9, pressure, ttc, unused, f2)
-
+    #Run_Toy_Diameter(50e-9, 1000e-9, 100e-9, pressure, ttc, unused, f2)  # error at 4.5um - 0.17
+    Run_Toy_Diameter(150e-9, 1000e-9, 100e-9, pressure, ttc, unused, f2)
+    f2.close()
+    
     # Plot results
     plt.title(str(pressure)+' bar - T/Tc='+str(ttc))
     plt.plot(value*1e9,error, linestyle='', marker='o', color="black")
@@ -322,18 +324,18 @@ if __name__ == "__main__":
     plt.savefig('lockin-error-diameter.png')
     plt.show()
 
-    f2.close()    
 
 
     # Starts the toy simulation for a range of T/Tc
     print("\nT/Tc...")
-    pressure = 0     # [bar] pressure
-    diameter = 400e-9;      # [m] vibrating wire diameter
+    #pressure = 0     # [bar] pressure
+    #diameter = 400e-9;      # [m] vibrating wire diameter
     
     error = np.array([])
     value = np.array([])
     Run_Toy_Temperature(0.1, 0.18, 0.01, pressure, unused, diameter, f3)
-
+    f3.close()
+    
     # Plot results
     plt.title(str(pressure)+' bar - '+str(diameter*1e9)+' nm')
     plt.plot(value,error, linestyle='', marker='o', color="black")
@@ -343,8 +345,4 @@ if __name__ == "__main__":
     plt.savefig('lockin-error-temperature.pdf')
     plt.savefig('lockin-error-temperature.png')
     plt.show()
-
-    f3.close()
     
-    
-

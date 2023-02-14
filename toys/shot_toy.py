@@ -293,8 +293,8 @@ if __name__ == "__main__":
 
     # Starts the toy simulation for a range of PRESSURES, fixed T/Tc and diameter
     print("\nPRESSURE...")
-    diameter = 400e-9;      # [m] vibrating wire diameter
-    ttc=0.1  # T/Tc
+    #diameter = 400e-9;      # [m] vibrating wire diameter
+    #ttc=0.1  # T/Tc
 
     Run_Toy_Pressure(0, 30, 1, unused, ttc, diameter, f1)
     f1.close()
@@ -312,12 +312,12 @@ if __name__ == "__main__":
     
     # Starts the toy simulation for a range of DIAMETERS, fixed T/Tc and pressure
     print("\nDIAMETERS...")
-    pressure = 0     # [bar] pressure
-    ttc=0.1  # T/Tc
+    #pressure = 0     # [bar] pressure
+    #ttc=0.1  # T/Tc
 
     error = np.array([])
     value = np.array([])
-    Run_Toy_Diameter(50e-9, 1000e-9, 100e-9, pressure, ttc, unused, f2)
+    Run_Toy_Diameter(150e-9, 1000e-9, 100e-9, pressure, ttc, unused, f2)
     f2.close()    
 
     # Plot results
@@ -333,8 +333,8 @@ if __name__ == "__main__":
 
     # Starts the toy simulation for a range of T/Tc
     print("\nT/Tc...")
-    pressure = 0     # [bar] pressure
-    diameter = 400e-9;      # [m] vibrating wire diameter
+    #pressure = 0     # [bar] pressure
+    #diameter = 400e-9;      # [m] vibrating wire diameter
     
     error = np.array([])
     value = np.array([])
