@@ -15,6 +15,8 @@ Input:
 Output:
  - Error on Energy 
 
+P. Franchini, 1/2023
+
 '''
 
 import numpy as np
@@ -26,6 +28,10 @@ from scipy.stats import norm
 # import Tsepelin code
 exec(open("../mod_helium3.py").read())
 
+# Configuration file with all the parameters                                                                                                                               
+exec(open("config.py").read())
+
+# Plotting style
 plt.rcParams.update({'font.size': 14})
 plt.rcParams.update({'lines.linewidth': 3})
 plt.rcParams.update({'xtick.direction': 'in'})
@@ -33,26 +39,26 @@ plt.rcParams.update({'ytick.direction': 'in'})
 
 ## Parameters ################################################
 
-volume = 1e-6      # [m^3] Helium-3 cell
-density = 6.05e3;  # [kg/m^3] Niobium-Titanium (NbTi)   
+#volume = 1e-6      # [m^3] Helium-3 cell
+#density = 6.05e3;  # [kg/m^3] Niobium-Titanium (NbTi)   
 
 #=============================================================
 
-pressure = 0     # [bar] pressure
-ttc=0.1
+#pressure = 0     # [bar] pressure
+#ttc=0.10
 #t_base = 150e-6 # [K] base temperature
-d = 400e-9;      # [m] vibrating wire diameter
-l = 2e-3         # [m] vibrating wire lenght
+#d = 400e-9;      # [m] vibrating wire diameter
+#l = 2e-3         # [m] vibrating wire lenght
 
 #=============================================================
 
-t_b = 5.00  # [s] decay constant
+#t_b = 5.00  # [s] decay constant
 #t_w = 0.77  # [s] response time - IS NOT CONSTANT -
 
 #=============================================================
 
-N = 1000  # number of toys
-verbose=False # verbosity for plotting
+N = 100  # number of toys
+verbose=False #False # verbosity for plotting
 
 
 ## More routines: ###########################################
@@ -60,13 +66,13 @@ verbose=False # verbosity for plotting
 def Width_from_Temperature(Temperature,PressureBar):
     
     gap = energy_gap_in_low_temp_limit(PressureBar)
-    width=np.power(Fermi_momentum(PressureBar),2)*Fermi_velocity(PressureBar)*density_of_states(PressureBar)/(2*density*np.pi*d)*np.exp(-gap/(Boltzmann_const*Temperature))
+    width=np.power(Fermi_momentum(PressureBar),2)*Fermi_velocity(PressureBar)*density_of_states(PressureBar)/(2*density*np.pi*diameter)*np.exp(-gap/(Boltzmann_const*Temperature))
     return width
 
 def Temperature_from_Width(Width,PressureBar):
     
     gap = energy_gap_in_low_temp_limit(PressureBar)
-    temperature=-gap/(Boltzmann_const*np.log( Width*2*density*np.pi*d/(np.power(Fermi_momentum(PressureBar),2)*Fermi_velocity(PressureBar)*density_of_states(PressureBar)))\
+    temperature=-gap/(Boltzmann_const*np.log( Width*2*density*np.pi*diameter/(np.power(Fermi_momentum(PressureBar),2)*Fermi_velocity(PressureBar)*density_of_states(PressureBar)))\
     )
     return temperature
 
@@ -108,9 +114,16 @@ def DeltaWidth_from_Energy(E,PressureBar,BaseTemperature):
 
 ###########################################################
 
+
 # Define the noise function for shot-noise
 def noise(_deltaf,_fb,_pressure,_temperature):
-    noise = _deltaf/np.sqrt( (Fermi_velocity(_pressure)**2*mass_effective(_pressure)*Fermi_momentum(_pressure)*l*d*Boltzmann_const*_temperature/(2*_fb*np.pi*Plankbar_const**2)*np.exp(-gap/(Boltzmann_const*_temperature))) )  # shot-noise as in eq.37
+    bandwidth = np.pi*_fb/2 # Samuli docet  
+    gap = energy_gap_in_low_temp_limit(_pressure)
+    mass=mass_effective(_pressure)*atomic_mass # effective mass [kg]
+    particle_density=1/(np.pi**2)*np.power(2*mass/Plankbar_const**2,3/2)*np.sqrt(Fermi_momentum(_pressure)**2/(2*mass))*Boltzmann_const*_temperature*np.exp(-gap/(Boltzmann_const*_temperature)) # QP number density, eq.31
+    sigma_n=np.sqrt((particle_density*Fermi_velocity(_pressure)*l*diameter/2)/2) # shot-noise, eq.32
+    noise = _deltaf/sigma_n * np.sqrt(bandwidth)    # relative error due to the shot-noise in a bandwith???, eq.35
+    #print(_deltaf,1/sigma_n,noise)
     return noise
 
 # Define signal fit function Dw vs time
@@ -169,13 +182,13 @@ def Toy(energy):
         base_toy = np.append(base_toy,base_fit)
 
         
-    if verbose and energy==1000:
+    if verbose and energy==10:
         # Plot deltaf(t)
         plt.plot(t, deltaf*1e3,linestyle='',marker='.', color="black")
         plt.plot(t, df(t,*popt)*1e3)
         plt.xlabel('time [s]')
         plt.ylabel('$\Delta f$ [mHz]')
-        plt.savefig('deltaf_toy-example'+str(d*1e9)+'.pdf')
+        plt.savefig('deltaf_toy-example'+str(diameter*1e9)+'.pdf')
         plt.show()
 
     if verbose and energy==1000:
@@ -184,7 +197,7 @@ def Toy(energy):
         plt.plot(t, v_h*f_base/df(t,*popt)*1e9)
         plt.xlabel('time [s]')
         plt.ylabel('$V_H$ [nV]')
-        plt.savefig('voltage_toy-example'+str(d*1e9)+'.pdf')
+        plt.savefig('voltage_toy-example'+str(diameter*1e9)+'.pdf')
         plt.show()
 
     # Plot toy energy distribution
@@ -192,7 +205,7 @@ def Toy(energy):
         plt.hist(delta_toy*alpha/1000,100)
         plt.xlabel('Energy [KeV]')
         plt.ylabel('Entries')
-        plt.savefig('energy_distribution'+str(d*1e9)+'.pdf')
+        plt.savefig('energy_distribution'+str(diameter*1e9)+'.pdf')
         plt.show()
 
     # Plot toy base distribution
@@ -200,7 +213,7 @@ def Toy(energy):
         plt.hist(base_toy,100)
         plt.xlabel('Base width [Hz]')
         plt.ylabel('Entries')
-        plt.savefig('base_width_distribution'+str(d*1e9)+'.pdf')
+        plt.savefig('base_width_distribution'+str(diameter*1e9)+'.pdf')
         plt.show()
 
 
@@ -241,6 +254,41 @@ def Run_Toy(start_energy, end_energy, step):
 
 if __name__ == "__main__":
 
+   
+    #d=4.5e-6
+    _pressure=0
+    _temperature=ttc*temperature_critical_superfluid(pressure)
+    gap = energy_gap_in_low_temp_limit(_pressure)
+    mass=mass_effective(_pressure)*atomic_mass
+    flux=1/(np.pi**2)*np.power(2*mass/Plankbar_const**2,3/2)*np.sqrt(Fermi_momentum(_pressure)**2/(2*mass))*Boltzmann_const*_temperature*np.exp(-gap/(Boltzmann_const*_temperature))
+
+    sigma_n=np.sqrt((flux*Fermi_velocity(_pressure)*l*diameter/2)/2)
+
+    Vm=36.8*1e-6   #molar volume, cm^ 3/mol, from Slazav Library
+    n1=6e23/Vm    #number density in SI units calculated with avogadro number
+    
+    print("Effective mass coeff.: ", mass_effective(_pressure))
+    print("Flux: ",flux)
+    print("He3 density",n1)
+    print("Flux/He_density: ",flux/n1)
+    
+    print("fractional noise: [%]",1/sigma_n*100)
+
+    sigma = np.array([])
+    temperature = np.array([])
+    for _temperature in np.arange(70e-6, 200e-6, 10e-6):
+        particle_density=1/(np.pi**2)*np.power(2*mass/Plankbar_const**2,3/2)*np.sqrt(Fermi_momentum(_pressure)**2/(2*mass))*Boltzmann_const*_temperature*np.exp(-gap/(Boltzmann_const*_temperature)) # QP number density, eq.31
+        sigma_n=np.sqrt( (particle_density*Fermi_velocity(_pressure)*l*diameter/2)/2 ) # shot-noise, eq.32
+        sigma=np.append(sigma,1/sigma_n) # fractional noise
+        temperature=np.append(temperature,_temperature)
+
+    plt.xlabel('Temperature [uK]')
+    plt.ylabel('fractional noise')
+    plt.plot(temperature*1e6, sigma)
+    plt.yscale('log')
+    plt.show()
+
+
     # Base temperature defined from the T/Tc
     t_base=ttc*temperature_critical_superfluid(pressure)
 
@@ -251,7 +299,7 @@ if __name__ == "__main__":
     # Parameters used
     print()
     print("Temperature: ",t_base*1e6, " uk")
-    print("Diameter:    ",d*1e9," nm")
+    print("Diameter:    ",diameter*1e9," nm")
     print("Pressure:    ",pressure, "bar")
 
     # Calculates alpha_prime for the error propagation
@@ -264,7 +312,7 @@ if __name__ == "__main__":
     print("alpha_prime",alpha_prime)
 
     # Single toy run for a defined energy [eV]
-    #_ = Toy(1000);
+    #_ = Toy(10);
     
     # Starts the toy simulation for a range of energies
     global error
@@ -272,19 +320,24 @@ if __name__ == "__main__":
     error = np.array([])
     e = np.array([])
 
-    Run_Toy(1, 100, 10)
+    Run_Toy(1e-2, 0.9, 1e-2)
+    Run_Toy(1, 9, 1)
+    Run_Toy(10, 90, 10)
     Run_Toy(100, 900, 50)
     Run_Toy(1000, 9000, 500)
     Run_Toy(10000, 100000, 2000)
 
+    # Close file
+    f.close()
+    
     # Plot results
-    plt.title(str(d*1e9)+" nm - "+str(t_base*1e6)+" $\mu$K - "+str(pressure)+ " bar")
+    plt.title(str(diameter*1e9)+" nm - "+str(t_base*1e6)+" $\mu$K - "+str(pressure)+ " bar")
     plt.plot(e/1000,error, linestyle='', marker='o', color="black")
     plt.xscale('log')
     plt.ylim([0, 100])  
     plt.xlabel('Energy [KeV]')
     plt.ylabel('Error [%]')
-    plt.savefig('error-shot'+str(d*1e9)+'.png')
+    plt.savefig('error-shot'+str(diameter*1e9)+'.png')
     plt.show()
 
-    f.close()
+

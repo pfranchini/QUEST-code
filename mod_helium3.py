@@ -59,7 +59,7 @@ def molarvolume(PressureBar):
 
     return 1.0e-6 * np.polyval(molarvolume_poly, PressureBar)
 
-def density(PressureBar):
+def he3_density(PressureBar):
     """For a given pressure[bar] function returns the helium-3 density [kg m^3].
 
     based on Greywall

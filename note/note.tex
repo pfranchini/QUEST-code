@@ -94,7 +94,8 @@ F = \frac{\pi}{4}p^2_F v_F N_0 \exp{\left( -\frac{\varDelta}{k_B T} \right)}
 The resonance width expressed in terms of temperature is
 
 \begin{equation}
-\Delta f = \frac{p^2_F v_F N_0}{2\pi\rho d}\exp{\left( -\frac{\varDelta}{k_B T} \right)}
+  \Delta f = \frac{p^2_F v_F N_0}{2\pi\rho d}\exp{\left( -\frac{\varDelta}{k_B T} \right)}
+  \label{eq:width}
 \end{equation}
 
 e.g. in fig.~\ref{fig:WvsT} for a Niobium-Titanium wire of 150\,nm diameter in a volume at 1\,bar; therefore the temperature can be derived from the resonance width
@@ -327,10 +328,10 @@ We consider the circuit noise as
 V_{RMS}  = \sqrt{\big|Z(\omega_0) + R + i\omega_0 L_i\big|^2 S_\phi \Delta f / M_i^2 + 4 k_B T R \Delta f + k_B T l B^2 / m}
 \end{equation}
 
-so the error on the voltage measurement, rescaled for the bandwidth $\pi f_\mathrm{base}/2$ corresponding to the base width is
+so the error on the voltage measurement, rescaled for the bandwidth $B = \pi f_\mathrm{base}/2$ corresponding to the base width is
 
 \begin{equation}
-\sigma_{V_H} = \frac{V_{RMS}}{\sqrt{\pi f_\mathrm{base}/2}} \sqrt{\mathrm{0.250 \cdot \pi f_\mathrm{base}/2}}
+\sigma_{V_H} = \frac{V_{RMS}}{B}\sqrt{f_{NEP}} = \frac{V_{RMS}}{\sqrt{\pi f_\mathrm{base}/2}} \sqrt{\mathrm{0.250 \cdot \pi f_\mathrm{base}/2}}
 \end{equation}
 
 
@@ -352,6 +353,44 @@ This is compatible with a hundred nano-meter wire, operated a zero pressure with
 
 
 
+\section{Quasiparticle shot-noise}
+
+The temperature dependent quasiparticle number density $n$ is
+
+\begin{equation}
+%n = \frac{m^* p_F}{\pi \hbar^2}k_B T \exp \left( {-\frac{\Delta}{k_BT}} \right) \\
+n = \frac{1}{\pi^2} \left( \frac{2m^*}{\hbar^2} \right) ^{3/2} \sqrt{E_F} k_B T \exp \left( {-\frac{\Delta}{k_BT}} \right) \\
+\end{equation}
+where $E_F = p_F^2/(2m^*)$~\cite{vonka}.\\
+As a two dimension approximation, a flux $N=\frac{1}{2}nv_FDa$ of quasiparticles of effective mass $m^*$ impacts on a wire of length $D$ and radius $a$, from one direction.\\
+The distribution of QP hitting the wire follows a Poisson distribution, therefore the error (input \textit{shot-noise}, or spectral noise) corresponds to the standard deviation $\sqrt{N}/\sqrt{\mathrm{Hz}}$:
+%in a bandwidth $B$
+
+\begin{align}
+\sigma_N &= \sqrt{N} = \sqrt{\frac{nv_FDa}{2B}}
+\end{align}
+therefore the relative error (aka \textit{fractional noise}) per $\sqrt{\mathrm{Hz}}$ is
+\begin{equation}
+  \sqrt{N}/N = \frac{1}{\sqrt{N}} = \sqrt{\frac{2}{n v_F D a}}
+\end{equation}
+so the shot-noise becomes relevant for a low fluxes (low temperatures), because the quasiparticle flux on the wire reduces as the temperature, so the fluctuation of the QP density becomes important~\cite{bradley}.
+
+Rewriting eq.~\ref{eq:width} in terms N gives
+\begin{equation}
+  \Delta f = N \frac{\pi p_F N_0 \hbar^3}{8 \rho a D m^* k_b T}
+\end{equation}
+Therefore the error relative to the shot-noise in a bandwidth B is
+\begin{equation}
+  \sigma_{\Delta f} = \frac{\partial \Delta f}{\partial N} \sigma_N \sqrt{B} = \frac{\Delta f}{N}\sqrt{N} \sqrt{B} = \frac{\Delta f}{\sqrt{N}} \sqrt{B}
+\end{equation}
+or
+\begin{equation}
+  \sigma_{\Delta f} = \frac{\partial \Delta f}{\partial N} \sigma_N \sqrt{f_{NEP}} = \frac{\Delta f}{N}\sqrt{N} \sqrt{B} = \frac{\Delta f}{\sqrt{N}} \sqrt{f_{NEP}}
+\end{equation}
+which can be used to calculate the uncertainty in the energy measurement determined by the pure shot-noise.
+
+As bandwidth of $\pi f_\mathrm{base}/2$ is used.
+
 % ============================================
 
 \pagebreak
@@ -364,6 +403,8 @@ This is compatible with a hundred nano-meter wire, operated a zero pressure with
 \bibitem{winkelmann} Winkelmann et al, Bolometric calibration of a superfluid 3He detector for Dark Matter search: Direct measurement of the scintillated energy fraction for
 neutron, electron and muon events (2007)
 \bibitem{lev} Lev, L., SQUID readout of a vibrating nanowire (2022)
+\bibitem{bradley} D. I. Bradley and W. M. Hayes, An RF-SQUID Amplifier System for Use with Vibrating Wire Resonators (1999)
+\bibitem{vonka} J. Vonka, Demagnetisation of Solid 3He \& Supercritical Superflow, thesis, 2018
 \end{thebibliography}
 
 \end{document}

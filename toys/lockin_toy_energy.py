@@ -27,31 +27,41 @@ from scipy.stats import norm
 # import Tsepelin code
 exec(open("../mod_helium3.py").read())
 
+# Configuration file with all the parameters
+exec(open("config.py").read())
+
+# Plot style
+plt.rcParams.update({'font.size': 14})
+plt.rcParams.update({'lines.linewidth': 3})
+plt.rcParams.update({'xtick.direction': 'in'})
+plt.rcParams.update({'ytick.direction': 'in'})
+
 ## Parameters ################################################
 
-volume = 1e-6      # [m^3] Helium-3 cell
-density = 6.05e3;  # [kg/m^3] Niobium-Titanium (NbTi)   
+#volume = 1e-6      # [m^3] Helium-3 cell
+#density = 6.05e3;  # [kg/m^3] Niobium-Titanium (NbTi)   
 
 #=============================================================
 
-pressure = 5     # [bar] pressure
-ttc=0.1
-#t_base = 150e-6  # [K] base temperature
-d = 200e-9;      # [m] vibrating wire diameter
+#pressure = 0     # [bar] pressure
+#ttc=0.1
+#t_base = 150e-6 # [K] base temperature
+#d = 400e-9;      # [m] vibrating wire diameter
+#l = 2e-3         # [m] vibrating wire lenght
 
 #=============================================================
 
-t_b = 5.00  # [s] decay constant
+#t_b = 5.00  # [s] decay constant
 #t_w = 0.77  # [s] response time - IS NOT CONSTANT -
 
-amp=100 # gain of the voltage cold amplifier
-v_h = amp*np.pi/2*1e-7  # [V] Base voltage height for a v=1mm/s
-v_rms = 7.9*1e-9    # [V] Error on voltage measurement for a lock-in amplifier
+#amp=100 # gain of the voltage cold amplifier
+#v_h = amp*np.pi/2*1e-7  # [V] Base voltage height for a v=1mm/s
+# _rms = 7.9*1e-9    # [V] Error on voltage measurement for a lock-in amplifier
 # v_drive=14.5e-3
 
 #=============================================================
 
-N = 1000  # number of toys
+N = 100  # number of toys
 verbose=False # verbosity for plotting
 
 
@@ -60,13 +70,13 @@ verbose=False # verbosity for plotting
 def Width_from_Temperature(Temperature,PressureBar):
     
     gap = energy_gap_in_low_temp_limit(PressureBar)
-    width=np.power(Fermi_momentum(PressureBar),2)*Fermi_velocity(PressureBar)*density_of_states(PressureBar)/(2*density*np.pi*d)*np.exp(-gap/(Boltzmann_const*Temperature))
+    width=np.power(Fermi_momentum(PressureBar),2)*Fermi_velocity(PressureBar)*density_of_states(PressureBar)/(2*density*np.pi*diameter)*np.exp(-gap/(Boltzmann_const*Temperature))
     return width
 
 def Temperature_from_Width(Width,PressureBar):
     
     gap = energy_gap_in_low_temp_limit(PressureBar)
-    temperature=-gap/(Boltzmann_const*np.log( Width*2*density*np.pi*d/(np.power(Fermi_momentum(PressureBar),2)*Fermi_velocity(PressureBar)*density_of_states(PressureBar)))\
+    temperature=-gap/(Boltzmann_const*np.log( Width*2*density*np.pi*diameter/(np.power(Fermi_momentum(PressureBar),2)*Fermi_velocity(PressureBar)*density_of_states(PressureBar)))\
     )
     return temperature
 
@@ -106,6 +116,12 @@ def DeltaWidth_from_Energy(E,PressureBar,BaseTemperature):
        
     return deltawidth, alpha
 
+###########################################################
+
+# Define the noise function for lock-in
+def noise(_deltaf,_fb): # [Hz]
+    noise = np.power(_deltaf,2)/(v_h*_fb)*v_rms   # lock-in (eq.21)
+    return noise
 
 # Define signal fit function Dw vs time
 def df(_t,_fb,_d): # time, base width, delta (delta width)
@@ -146,7 +162,7 @@ def Toy(energy):
 
         # Add noise based on voltage error
         for j in range(len(deltaf)):
-            deltaf[j] = np.random.normal(deltaf[j],np.power(deltaf[j],2)/(v_h*f_base)*v_rms, 1)
+            deltaf[j] = np.random.normal(deltaf[j],noise(deltaf[j],f_base), 1)
 
         # Random noise    
         #noise = np.random.normal(0, 1e-3, len(t))
@@ -163,22 +179,22 @@ def Toy(energy):
         base_toy = np.append(base_toy,base_fit)
 
         
-    if verbose and energy==10000:
+    if verbose and energy==1000:
         # Plot deltaf(t)
-        plt.plot(t, deltaf,linestyle='',marker='.', color="black")
-        plt.plot(t, df(t,*popt))
+        plt.plot(t, deltaf*1e3,linestyle='',marker='.', color="black")
+        plt.plot(t, df(t,*popt)*1e3)
         plt.xlabel('time [s]')
-        plt.ylabel('$\Delta f$ [Hz]')
-        plt.savefig('deltaf_toy-example'+str(d*1e9)+'.pdf')
+        plt.ylabel('$\Delta f$ [mHz]')
+        plt.savefig('deltaf_toy-example'+str(diameter*1e9)+'.pdf')
         plt.show()
 
-    if verbose and energy==10000:
+    if verbose and energy==1000:
         # Plot voltage(t)
         plt.plot(t, v_h*f_base/deltaf*1e9,linestyle='',marker='.', color="black")
         plt.plot(t, v_h*f_base/df(t,*popt)*1e9)
         plt.xlabel('time [s]')
         plt.ylabel('$V_H$ [nV]')
-        plt.savefig('voltage_toy-example'+str(d*1e9)+'.pdf')
+        plt.savefig('voltage_toy-example'+str(diameter*1e9)+'.pdf')
         plt.show()
 
     # Plot toy energy distribution
@@ -186,7 +202,7 @@ def Toy(energy):
         plt.hist(delta_toy*alpha/1000,100)
         plt.xlabel('Energy [KeV]')
         plt.ylabel('Entries')
-        plt.savefig('energy_distribution'+str(d*1e9)+'.pdf')
+        plt.savefig('energy_distribution'+str(diameter*1e9)+'.pdf')
         plt.show()
 
     # Plot toy base distribution
@@ -194,7 +210,7 @@ def Toy(energy):
         plt.hist(base_toy,100)
         plt.xlabel('Base width [Hz]')
         plt.ylabel('Entries')
-        plt.savefig('base_width_distribution'+str(d*1e9)+'.pdf')
+        plt.savefig('base_width_distribution'+str(diameter*1e9)+'.pdf')
         plt.show()
 
 
@@ -245,7 +261,7 @@ if __name__ == "__main__":
     # Parameters used
     print()
     print("Temperature: ",t_base*1e6, " uk")
-    print("Diameter:    ",d*1e9," nm")
+    print("Diameter:    ",diameter*1e9," nm")
     print("Pressure:    ",pressure, "bar")
 
     # Calculates alpha_prime for the error propagation
@@ -256,6 +272,9 @@ if __name__ == "__main__":
     gap = energy_gap_in_low_temp_limit(pressure)
     alpha_prime = (alpha2-alpha1)/epsilon * Boltzmann_const/gap * np.power(t_base,2) * 1/Width_from_Temperature(t_base,pressure)
     print("alpha_prime",alpha_prime)
+
+    # Single toy run for a defined energy [eV]
+    #_ = Toy(1000);
     
     # Starts the toy simulation for a range of energies
     global error
@@ -269,18 +288,13 @@ if __name__ == "__main__":
     Run_Toy(10000, 100000, 2000)
 
     # Plot results
-    plt.title(str(d*1e9)+" nm - "+str(t_base*1e6)+" $\mu$K - "+str(pressure)+ " bar")
+    plt.title(str(diameter*1e9)+" nm - "+str(t_base*1e6)+" $\mu$K - "+str(pressure)+ " bar")
     plt.plot(e/1000,error, linestyle='', marker='o', color="black")
     plt.xscale('log')
     plt.ylim([0, 100])  
     plt.xlabel('Energy [KeV]')
     plt.ylabel('Error [%]')
-    plt.savefig('error-lockin'+str(d*1e9)+'.png')
+    plt.savefig('error-lockin'+str(diameter*1e9)+'.png')
     plt.show()
 
-
-    # Single toy run for a defined energy
-    #_ = Toy(10000);
-
-    
     f.close()

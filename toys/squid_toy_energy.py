@@ -27,43 +27,46 @@ from scipy.stats import norm
 # import Tsepelin code
 exec(open("../mod_helium3.py").read())
 
+# Configuration file with all the parameters                                                                                                                               
+exec(open("config.py").read())
+
 ## Parameters ################################################
 
-volume = 1e-6      # [m^3] Helium-3 cell
-density = 6.05e3;  # [kg/m^3] Niobium-Titanium (NbTi)   
+#volume = 1e-6      # [m^3] Helium-3 cell
+#density = 6.05e3;  # [kg/m^3] Niobium-Titanium (NbTi)   
 
 #=============================================================
 
-pressure = 5     # [bar] pressure
+#pressure = 0     # [bar] pressure
 #t_base = 150e-6  # [K] base temperature - useless
-ttc=0.1  # T/Tc
-d = 200e-9;      # [m] vibrating wire diameter
+#ttc=0.1  # T/Tc
+#d = 400e-9;      # [m] vibrating wire diameter
 
 #=============================================================
 
-t_b = 5.00  # [s] decay constant
+#t_b = 5.00  # [s] decay constant
 #t_w = 0.77  # [s] response time - IS NOT CONSTANT -
 
-v_h = np.pi/2*1e-7  # [V] Base voltage height for a v=1mm/s
+#v_h = np.pi/2*1e-7  # [V] Base voltage height for a v=1mm/s
 
 #=============================================================
 
-N = 1000  # number of toys
+N = 100  # number of toys
 verbose=False # verbosity for plotting
 
 ## SQUID parameters ==========================================                                                                                                             
 
-B = 0.4e-3 # T
-R = 1 # Ohm
-w0 = 5000  # Hz
-L = 1.5e-6 # H
+#B = 0.4e-3 # T
+#R = 1 # Ohm
+#w0 = 5000  # Hz
+#L = 1.5e-6 # H
 #Z = w0*L  minimum at fields
-phi0 = 2.067833848e-15  # Wb
-S = np.power(0.4e-6*phi0,2) # Hz^-1
-M = 10.0e-9 # H
-l = 2e-3 # m
-m = np.power(d/2,2)*np.pi*density # kg/m
-v0 = 1e-3 # m/sec
+#phi0 = 2.067833848e-15  # Wb
+#S = np.power(0.4e-6*phi0,2) # Hz^-1
+#M = 10.0e-9 # H
+#l = 2e-3 # m
+#
+#v0 = 1e-3 # m/sec
 
 # ===========================================================
 
@@ -72,13 +75,13 @@ v0 = 1e-3 # m/sec
 def Width_from_Temperature(Temperature,PressureBar):
     
     gap = energy_gap_in_low_temp_limit(PressureBar)
-    width=np.power(Fermi_momentum(PressureBar),2)*Fermi_velocity(PressureBar)*density_of_states(PressureBar)/(2*density*np.pi*d)*np.exp(-gap/(Boltzmann_const*Temperature))
+    width=np.power(Fermi_momentum(PressureBar),2)*Fermi_velocity(PressureBar)*density_of_states(PressureBar)/(2*density*np.pi*diameter)*np.exp(-gap/(Boltzmann_const*Temperature))
     return width
 
 def Temperature_from_Width(Width,PressureBar):
     
     gap = energy_gap_in_low_temp_limit(PressureBar)
-    temperature=-gap/(Boltzmann_const*np.log( Width*2*density*np.pi*d/(np.power(Fermi_momentum(PressureBar),2)*Fermi_velocity(PressureBar)*density_of_states(PressureBar)))\
+    temperature=-gap/(Boltzmann_const*np.log( Width*2*density*np.pi*diameter/(np.power(Fermi_momentum(PressureBar),2)*Fermi_velocity(PressureBar)*density_of_states(PressureBar)))\
     )
     return temperature
 
@@ -126,6 +129,7 @@ def df(_t,_fb,_d): # time, base width, delta (delta width)
     return _fb + np.heaviside(_t-_t1,1)*(_d*np.power(t_b/_t_w,_t_w/(t_b-_t_w))*(t_b/(t_b-_t_w))*(np.exp(-(_t-_t1)/t_b) - np.exp(-(_t-_t1)/_t_w)))
 
 def Voltage_Error(_fb): # base width
+    m = np.power(diameter/2,2)*np.pi*density # [kg/m]
     Z=l*np.power(B,2)/(2*np.pi*m*_fb)
     v_rms = np.sqrt( (np.power(Z+R,2) + np.power(w0*L,2))*S*np.pi*_fb/2/np.power(M,2) + 4*Boltzmann_const*t_base*R*np.pi*_fb/2 + Boltzmann_const*t_base*l*np.power(B,2)/m ) # [V]
     nep = 0.250 # Noise Equivalent Power in units of bandwidth
@@ -185,7 +189,7 @@ def Toy(energy):
         plt.plot(t, df(t,*popt))
         plt.xlabel('time [s]')
         plt.ylabel('$\Delta f$ [Hz]')
-        plt.savefig('deltaf_toy-example'+str(d*1e9)+'.pdf')
+        plt.savefig('deltaf_toy-example'+str(diameter*1e9)+'.pdf')
         plt.show()
 
     if verbose and energy==10000:
@@ -194,7 +198,7 @@ def Toy(energy):
         plt.plot(t, v_h*f_base/df(t,*popt)*1e9)
         plt.xlabel('time [s]')
         plt.ylabel('$V_H$ [nV]')
-        plt.savefig('voltage_toy-example'+str(d*1e9)+'.pdf')
+        plt.savefig('voltage_toy-example'+str(diameter*1e9)+'.pdf')
         plt.show()
 
     # Plot toy energy distribution
@@ -202,7 +206,7 @@ def Toy(energy):
         plt.hist(delta_toy*alpha/1000,100)
         plt.xlabel('Energy [KeV]')
         plt.ylabel('Entries')
-        plt.savefig('energy_distribution'+str(d*1e9)+'.pdf')
+        plt.savefig('energy_distribution'+str(diameter*1e9)+'.pdf')
         plt.show()
 
     # Plot toy base distribution
@@ -210,7 +214,7 @@ def Toy(energy):
         plt.hist(base_toy,100)
         plt.xlabel('Base width [Hz]')
         plt.ylabel('Entries')
-        plt.savefig('base_width_distribution'+str(d*1e9)+'.pdf')
+        plt.savefig('base_width_distribution'+str(diameter*1e9)+'.pdf')
         plt.show()
 
 
@@ -261,7 +265,7 @@ if __name__ == "__main__":
     # Parameters used
     print()
     print("Temperature: ",t_base*1e6, " uk")
-    print("Diameter:    ",d*1e9," nm")
+    print("Diameter:    ",diameter*1e9," nm")
     print("Pressure:    ",pressure, "bar")
     print("T/Tc:        ",t_base/temperature_critical_superfluid(pressure))
 
@@ -290,13 +294,13 @@ if __name__ == "__main__":
     f.close()
     
     # Plot results
-    plt.title(str(d*1e9)+" nm - "+str(l*1e3)+" mm - "+str(t_base*1e6)+" $\mu$K - "+str(pressure)+ " bar")
+    plt.title(str(diameter*1e9)+" nm - "+str(l*1e3)+" mm - "+str(t_base*1e6)+" $\mu$K - "+str(pressure)+ " bar")
     plt.plot(e/1000,error, linestyle='', marker='o', color="black")
     plt.xscale('log')
     #plt.ylim([0, 3])  
     plt.xlabel('Energy [KeV]')
     plt.ylabel('Error [%]')
-    plt.savefig('error-squid'+str(d*1e9)+'.pdf')
+    plt.savefig('error-squid'+str(diameter*1e9)+'.pdf')
     plt.show()
 
 

@@ -30,27 +30,30 @@ from scipy.stats import norm
 # import Tsepelin code
 exec(open("../mod_helium3.py").read())
 
+# Configuration file with all the parameters
+exec(open("config.py").read())
+
 ## Parameters ################################################
 
-volume = 1e-6      # [m^3] Helium-3 cell
-density = 6.05e3;  # [kg/m^3] Niobium-Titanium (NbTi)   
+#volume = 1e-6      # [m^3] Helium-3 cell
+#density = 6.05e3;  # [kg/m^3] Niobium-Titanium (NbTi)   
 
 #=============================================================
 
-pressure = 0     # [bar] pressure
+#pressure = 0     # [bar] pressure
 #temperature = 150e-6    # [K] base temperature - useless, we need just T/Tc
-ttc=0.1  # T/Tc
-diameter = 400e-9;      # [m] vibrating wire diameter
-l = 2e-3         # [m] vibrating wire lenght
-energy = 10;   # [eV] deposited energy
+#ttc=0.10  # T/Tc
+#diameter = 400e-9;      # [m] vibrating wire diameter
+#l = 2e-3         # [m] vibrating wire lenght
+#energy = 10;   # [eV] deposited energy
 
 #=============================================================
 
-t_b = 5.00  # [s] decay constant
+#t_b = 5.00  # [s] decay constant
 
 #=============================================================
 
-N = 1000  # number of toys
+N = 100  # number of toys
 verbose=False  # verbosity for plotting
 
 unused = 0.0
@@ -99,9 +102,14 @@ def DeltaWidth_from_Energy(E,PressureBar,BaseTemperature,Diameter):
 ###########################################################
 
 # Define the noise function for shot-noise
-def noise(_deltaf,_fb,_pressure,_temperature):
+def noise(_deltaf,_fb,_pressure,_temperature,_diameter):
+    bandwidth = np.pi*_fb/2 # Samuli docet
     gap = energy_gap_in_low_temp_limit(_pressure)
-    noise = _deltaf/np.sqrt( (Fermi_velocity(_pressure)**2*mass_effective(_pressure)*Fermi_momentum(_pressure)*l*diameter*Boltzmann_const*_temperature/(2*_fb*np.pi*Plankbar_const**2)*np.exp(-gap/(Boltzmann_const*_temperature))) )  # shot-noise as in eq.37
+    mass=mass_effective(_pressure)*atomic_mass # effective mass [kg]
+    particle_density=1/(np.pi**2)*np.power(2*mass/Plankbar_const**2,3/2)*np.sqrt(Fermi_momentum(_pressure)**2/(2*mass))*Boltzmann_const*_temperature*np.exp(-gap/(Boltzmann_const*_temperature)) # QP number density, eq.31
+    sigma_n=np.sqrt((particle_density*Fermi_velocity(_pressure)*l*_diameter/2)/2) # shot-noise, eq.32
+
+    noise = _deltaf/sigma_n * np.sqrt(bandwidth)    # relative error due to the shot-noise in a bandwith???, eq.35
     return noise
 
 # Define signal fit function Dw vs time
@@ -149,7 +157,7 @@ def Toy(_energy,_pressure,_temperature,_diameter):
         
         # Add noise based on voltage error. The voltage error comes from the QP shot noise
         for j in range(len(deltaf)):
-            deltaf[j] = np.random.normal(deltaf[j],noise(deltaf[j],f_base,pressure,_temperature), 1)
+            deltaf[j] = np.random.normal(deltaf[j],noise(deltaf[j],f_base,_pressure,_temperature,_diameter), 1)
 
         # Fit the noise'd distribution        
         popt, pcov = curve_fit(df,t,deltaf)
@@ -289,7 +297,8 @@ if __name__ == "__main__":
     ttc=0.1  # T/Tc
 
     Run_Toy_Pressure(0, 30, 1, unused, ttc, diameter, f1)
-
+    f1.close()
+    
     # Plot results
     plt.title(str(diameter*1e9)+' nm - T/Tc='+str(ttc))
     plt.plot(value,error, linestyle='', marker='o', color="black")
@@ -300,8 +309,6 @@ if __name__ == "__main__":
     plt.savefig('shot-error-pressure.png')
     plt.show()
 
-    f1.close()
-
     
     # Starts the toy simulation for a range of DIAMETERS, fixed T/Tc and pressure
     print("\nDIAMETERS...")
@@ -311,6 +318,7 @@ if __name__ == "__main__":
     error = np.array([])
     value = np.array([])
     Run_Toy_Diameter(50e-9, 1000e-9, 100e-9, pressure, ttc, unused, f2)
+    f2.close()    
 
     # Plot results
     plt.title(str(pressure)+' bar - T/Tc='+str(ttc))
@@ -322,8 +330,6 @@ if __name__ == "__main__":
     plt.savefig('shot-error-diameter.png')
     plt.show()
 
-    f2.close()    
-
 
     # Starts the toy simulation for a range of T/Tc
     print("\nT/Tc...")
@@ -333,7 +339,8 @@ if __name__ == "__main__":
     error = np.array([])
     value = np.array([])
     Run_Toy_Temperature(0.1, 0.18, 0.01, pressure, unused, diameter, f3)
-
+    f3.close()
+    
     # Plot results
     plt.title(str(pressure)+' bar - '+str(diameter*1e9)+' nm')
     plt.plot(value,error, linestyle='', marker='o', color="black")
@@ -343,8 +350,4 @@ if __name__ == "__main__":
     plt.savefig('shot-error-temperature.pdf')
     plt.savefig('shot-error-temperature.png')
     plt.show()
-
-    f3.close()
     
-    
-

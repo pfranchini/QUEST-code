@@ -31,29 +31,31 @@ from scipy.stats import norm
 # import Tsepelin code
 exec(open("../mod_helium3.py").read())
 
+# Configuration file with all the parameters
+exec(open("config.py").read())
+
 ## Parameters ################################################
 
-volume = 1e-6      # [m^3] Helium-3 cell
-density = 6.05e3;  # [kg/m^3] Niobium-Titanium (NbTi)   
+#volume = 1e-6      # [m^3] Helium-3 cell
+#density = 6.05e3;  # [kg/m^3] Niobium-Titanium (NbTi)   
 
 #=============================================================
 
-pressure = 5     # [bar] pressure
-#temperature = 150e-6    # [K] base temperature - useless, we need just T/Tc
-ttc=0.1  # T/Tc
-diameter = 200e-9;      # [m] vibrating wire diameter
-energy = 10;   # [eV] deposited energy
+#pressure = 0     # [bar] pressure
+#ttc=0.1  # T/Tc
+#diameter = 400e-9;      # [m] vibrating wire diameter
+#energy = 10;   # [eV] deposited energy
 
 #=============================================================
 
-t_b = 5.00  # [s] decay constant
-amp=100 # gain of the voltage cold amplifier
-v_h = amp*np.pi/2*1e-7  # [V] Base voltage height for a v=1mm/s
-v_rms = 7.9*1e-9    # [V] Error on voltage measurement for a lock-in amplifier
+#t_b = 5.00  # [s] decay constant
+#amp=100 # gain of the voltage cold amplifier
+#v_h = amp*np.pi/2*1e-7  # [V] Base voltage height for a v=1mm/s
+#v_rms = 7.9*1e-9    # [V] Error on voltage measurement for a lock-in amplifier
 
 #=============================================================
 
-N = 1000  # number of toys
+N = 100  # number of toys
 verbose=False  # verbosity for plotting
 
 unused = 0.0
@@ -269,6 +271,8 @@ if __name__ == "__main__":
     print("# diameter[m]","error[%]",file=f2)
     print("# T/Tc","error[%]",file=f3)
 
+    print("Gap:", energy_gap_in_low_temp_limit(pressure)/temperature_critical_superfluid(pressure)/Boltzmann_const)
+
     # Parameters used
     print("\nEnergy     : ",energy, " eV")
     #print("Pressure:    ",pressure, "bar")
@@ -281,10 +285,10 @@ if __name__ == "__main__":
 
     # Starts the toy simulation for a range of PRESSURES, fixed T/Tc and diameter
     print("\nPRESSURE...")
-    diameter = 200e-9;      # [m] vibrating wire diameter
+    diameter = 400e-9;      # [m] vibrating wire diameter
     ttc=0.1  # T/Tc
 
-    Run_Toy_Pressure(1, 30, 1, unused, ttc, diameter, f1)
+    Run_Toy_Pressure(0, 30, 1, unused, ttc, diameter, f1)
 
     # Plot results
     plt.title(str(diameter*1e9)+' nm - T/Tc='+str(ttc))
@@ -301,7 +305,7 @@ if __name__ == "__main__":
     
     # Starts the toy simulation for a range of DIAMETERS, fixed T/Tc and pressure
     print("\nDIAMETERS...")
-    pressure = 5     # [bar] pressure
+    pressure = 0     # [bar] pressure
     ttc=0.1  # T/Tc
 
     error = np.array([])
@@ -323,8 +327,8 @@ if __name__ == "__main__":
 
     # Starts the toy simulation for a range of T/Tc
     print("\nT/Tc...")
-    pressure = 5     # [bar] pressure
-    diameter = 200e-9;      # [m] vibrating wire diameter
+    pressure = 0     # [bar] pressure
+    diameter = 400e-9;      # [m] vibrating wire diameter
     
     error = np.array([])
     value = np.array([])

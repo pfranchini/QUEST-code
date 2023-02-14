@@ -30,44 +30,47 @@ from scipy.stats import norm
 # import Tsepelin code
 exec(open("../mod_helium3.py").read())
 
+# Configuration file with all the parameters                                                                                                                               
+exec(open("config.py").read())
+
 ## Parameters ################################################
 
-volume = 1e-6      # [m^3] Helium-3 cell
-density = 6.05e3;  # [kg/m^3] Niobium-Titanium (NbTi)   
+#volume = 1e-6      # [m^3] Helium-3 cell
+#density = 6.05e3;  # [kg/m^3] Niobium-Titanium (NbTi)   
 
 #=============================================================
 
-pressure = 5     # [bar] pressure
+#pressure = 0     # [bar] pressure
 #temperature = 150e-6    # [K] base temperature - useless
-ttc=0.1  # T/Tc
-diameter = 200e-9;      # [m] vibrating wire diameter
-energy = 10;   # [eV] deposited energy
+#ttc=0.1  # T/Tc
+#diameter = 400e-9;      # [m] vibrating wire diameter
+#energy = 10;   # [eV] deposited energy
 
 #=============================================================
 
-t_b = 5.00  # [s] decay constant
+#t_b = 5.00  # [s] decay constant
 
-v_h = np.pi/2*1e-7  # [V] Base voltage height for a v=1mm/s
+#v_h = np.pi/2*1e-7  # [V] Base voltage height for a v=1mm/s
 
 #=============================================================
 
-N = 1000  # number of toys
+N = 100  # number of toys
 verbose=False  # verbosity for plotting
 
 unused=0.0
 
 ## SQUID parameters ==========================================                                                                                                             
 
-B = 0.4e-3 # T
-R = 1 # Ohm
-w0 = 5000  # Hz
-L = 1.5e-6 # H
-#Z = w0*L  minimum at fields
-phi0 = 2.067833848e-15  # Wb
-S = np.power(0.4e-6*phi0,2) # Hz^-1
-M = 10.0e-9 # H
-l = 2e-3 # m
-v0 = 1e-3 # m/sec
+#B = 0.4e-3 # T
+#R = 1 # Ohm
+#w0 = 5000  # Hz
+#L = 1.5e-6 # H
+##Z = w0*L  minimum at fields
+#phi0 = 2.067833848e-15  # Wb
+#S = np.power(0.4e-6*phi0,2) # Hz^-1
+#M = 10.0e-9 # H
+#l = 2e-3 # m
+#v0 = 1e-3 # m/sec
 
 # ===========================================================
 
@@ -302,7 +305,7 @@ if __name__ == "__main__":
 
     
     # Plot voltage error vs DIAMETER
-    pressure = 5   
+    pressure = 0 
     temperature = 150e-6    # [K] base temperature   
     v_error = np.array([])
     diameter = np.array([])
@@ -345,10 +348,10 @@ if __name__ == "__main__":
 
     # Starts the toy simulation for a range of PRESSURES, fixed T/Tc and diameter
     print("\nPRESSURE...")
-    diameter = 200e-9;      # [m] vibrating wire diameter
+    diameter = 400e-9;      # [m] vibrating wire diameter
     ttc=0.1  # T/Tc
 
-    Run_Toy_Pressure(1, 30, 1, unused, ttc, diameter, f1)
+    Run_Toy_Pressure(0, 30, 1, unused, ttc, diameter, f1)
 
     # Plot results
     plt.title(str(diameter*1e9)+' nm - '+str(l*1e3)+' mm - T/Tc='+str(ttc))
@@ -365,7 +368,7 @@ if __name__ == "__main__":
 
     # Starts the toy simulation for a range of DIAMETERS, fixed T/Tc and pressure
     print("\nDIAMETERS...")
-    pressure = 5     # [bar] pressure
+    pressure = 0     # [bar] pressure
     ttc=0.1  # T/Tc
 
     error = np.array([])
@@ -387,8 +390,8 @@ if __name__ == "__main__":
     
     # Starts the toy simulation for a range of T/Tc
     print("\nT/Tc...")
-    pressure = 5     # [bar] pressure
-    diameter = 200e-9;      # [m] vibrating wire diameter
+    pressure = 0     # [bar] pressure
+    diameter = 400e-9;      # [m] vibrating wire diameter
     
     error = np.array([])
     value = np.array([])
