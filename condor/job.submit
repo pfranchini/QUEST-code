@@ -1,0 +1,32 @@
+
+basedir    = /home/pfranchi/scratch/QUEST/cosmics/fridge4/nowater
+
+Universe   = vanilla
+Executable = /home/pfranchi/scratch/QUEST/cosmics/code/job.sh
+arguments = $(ProcId) $(job) $(basedir)
+
+jobdir  = $(basedir)/$(job)
+
+input   = /dev/null
+
+include command : mkdir -p $(jobdir)
+
+# direct logging and screen out
+output = $(jobdir)/job-$(ProcId).out
+error  = $(jobdir)/job-$(ProcId).err
+log    = $(jobdir)/job-$(ProcId).log
+
+# resources
+request_cpus = 1
+request_disk = 500MB
+request_memory = 500MB
+
+# queue name
+#+JobFlavour = "short"
++JobFlavour = "medium"
+
+ShouldTransferFiles = YES
+when_to_transfer_output = ON_EXIT_OR_EVICT
+
+Queue 10
+#Queue 1000
