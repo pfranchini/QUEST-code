@@ -328,11 +328,21 @@ We consider the circuit noise as
 V_{RMS}  = \sqrt{\big|Z(\omega_0) + R + i\omega_0 L_i\big|^2 S_\phi \Delta f / M_i^2 + 4 k_B T R \Delta f + k_B T l B^2 / m}
 \end{equation}
 
-so the error on the voltage measurement, rescaled for the bandwidth $B = \pi f_\mathrm{base}/2$ corresponding to the base width is
+which corresponds to the \textit{spectral density}; therefore the error on the voltage measurement, rescaled for the bandwidth $B = \pi f_\mathrm{base}/2$ (corresponding to the base width) is
 
 \begin{equation}
-\sigma_{V_H} = \frac{V_{RMS}}{B}\sqrt{f_{NEP}} = \frac{V_{RMS}}{\sqrt{\pi f_\mathrm{base}/2}} \sqrt{\mathrm{0.250 \cdot \pi f_\mathrm{base}/2}}
+  \sigma_{V_H} = V_{RMS}\sqrt{B} = V_{RMS}\sqrt{\pi f_\mathrm{base}/2}
 \end{equation}
+
+Since in general the readout of a SQUID is done with a lock-in amplifier, the error would be
+
+\begin{equation}
+  \sigma_{V_H} = V_{RMS}\sqrt{min\{B_\mathrm{SQUID},B_\mathrm{LOCK-IN}\}}
+\end{equation}
+
+%\begin{equation}
+%\sigma_{V_H} = \frac{V_{RMS}}{\sqrt{B}}\sqrt{f_{NEP}} = \frac{V_{RMS}}{\sqrt{\pi f_\mathrm{base}/2}} \sqrt{\mathrm{0.250 \cdot \pi f_\mathrm{base}/2}}
+%\end{equation}
 
 
 
@@ -363,7 +373,7 @@ n = \frac{1}{\pi^2} \left( \frac{2m^*}{\hbar^2} \right) ^{3/2} \sqrt{E_F} k_B T 
 \end{equation}
 where $E_F = p_F^2/(2m^*)$~\cite{vonka}.\\
 As a two dimension approximation, a flux $N=\frac{1}{2}nv_FDa$ of quasiparticles of effective mass $m^*$ impacts on a wire of length $D$ and radius $a$, from one direction.\\
-The distribution of QP hitting the wire follows a Poisson distribution, therefore the error (input \textit{shot-noise}, or spectral noise) corresponds to the standard deviation $\sqrt{N}/\sqrt{\mathrm{Hz}}$:
+The distribution of QPs hitting the wire follows a Poisson distribution, therefore the error (input \textit{shot-noise}, or spectral noise) corresponds to the standard deviation $\sqrt{N}/\sqrt{\mathrm{Hz}}$:
 %in a bandwidth $B$
 
 \begin{align}

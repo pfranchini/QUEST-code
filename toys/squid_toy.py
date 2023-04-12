@@ -124,8 +124,9 @@ def Voltage_Error(_fb,_temperature,_diameter): # (base width, temperature, diame
     m = np.power(_diameter/2,2)*np.pi*density # kg/m
     Z=l*np.power(B,2)/(2*np.pi*m*_fb)
     v_rms = np.sqrt( (np.power(Z+R,2) + np.power(w0*L,2))*S*np.pi*_fb/2/np.power(M,2) + 4*Boltzmann_const*_temperature*R*np.pi*_fb/2 + Boltzmann_const*_temperature*l*np.power(B,2)/m ) # [V]
-    nep = 0.250 # Noise Equivalent Power in units of bandwidth
-    return v_rms*np.sqrt(nep)
+    #nep = 0.250 # Noise Equivalent Power in units of bandwidth
+    bandwidth = min(np.pi*_fb/2, lockin_bandwidth) # Min between lock-in bandwidth and SQUID bandwidth as in Lev's note 
+    return v_rms*np.sqrt(bandwidth)
 
 ###########################################################
 

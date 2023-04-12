@@ -7,3 +7,5 @@
 *.png
 *.log
 *.txt
+*.out
+output/

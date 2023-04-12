@@ -93,7 +93,6 @@ def DeltaWidth_from_Energy(E,PressureBar,BaseTemperature):
         DW = np.append(DW,dw)
         
     # Draw the plot 
-    '''
     if verbose and E==10000: 
         plt.plot(DQ/1e3,DW*1e3,label='DQvsDW')
         plt.title('Width variation vs Deposited energy')
@@ -101,7 +100,6 @@ def DeltaWidth_from_Energy(E,PressureBar,BaseTemperature):
         plt.xlabel('$\Delta$Q [KeV]')
         plt.ylabel('$\Delta(\Delta f)$ [mHz]')
         plt.show()
-    '''
     
     # Fit line to extract the slope alpha: DQ = alpha * DW
     global alpha
@@ -117,7 +115,8 @@ def DeltaWidth_from_Energy(E,PressureBar,BaseTemperature):
 
 # Define the noise function for shot-noise
 def noise(_deltaf,_fb,_pressure,_temperature):
-    bandwidth = np.pi*_fb/2 # Samuli docet  
+    #bandwidth = np.pi*_fb/2 # Samuli docet
+    bandwidth = min(np.pi*_fb/2, lockin_bandwidth) # Samuli docet
     gap = energy_gap_in_low_temp_limit(_pressure)
     mass=mass_effective(_pressure)*atomic_mass # effective mass [kg]
     particle_density=1/(np.pi**2)*np.power(2*mass/Plankbar_const**2,3/2)*np.sqrt(Fermi_momentum(_pressure)**2/(2*mass))*Boltzmann_const*_temperature*np.exp(-gap/(Boltzmann_const*_temperature)) # QP number density, eq.31
@@ -149,8 +148,8 @@ def Toy(energy):
     
     print("Base width:      ",f_base*1000, " mHz")
     print("Width variation: ",delta*1000,  " mHz")
-    print("t_w: ",t_w, "s")
-    
+    print("t_w: ",t_w, "s") 
+          
     #t = np.linspace(0, 50, 200) # time
     t = np.linspace(4.5, 50, 1000) # time
 
@@ -166,7 +165,7 @@ def Toy(energy):
         # Add noise based on QP shot noise
         for j in range(len(deltaf)):
             deltaf[j] = np.random.normal(deltaf[j],noise(deltaf[j],f_base,pressure,t_base), 1)
-
+            
         # Random noise    
         #noise = np.random.normal(0, 1e-3, len(t))
         #deltaf = deltaf + noise
@@ -320,7 +319,7 @@ if __name__ == "__main__":
     error = np.array([])
     e = np.array([])
 
-    Run_Toy(1e-2, 0.9, 1e-2)
+    Run_Toy(1e-2, 0.9, 1e-1)
     Run_Toy(1, 9, 1)
     Run_Toy(10, 90, 10)
     Run_Toy(100, 900, 50)

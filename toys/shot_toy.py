@@ -103,7 +103,8 @@ def DeltaWidth_from_Energy(E,PressureBar,BaseTemperature,Diameter):
 
 # Define the noise function for shot-noise
 def noise(_deltaf,_fb,_pressure,_temperature,_diameter):
-    bandwidth = np.pi*_fb/2 # Samuli docet
+    #bandwidth = np.pi*_fb/2 # Samuli docet
+    bandwidth = min(np.pi*_fb/2, lockin_bandwidth) # Min between lock-in bandwidth and SQUID bandwidth as in Lev's note
     gap = energy_gap_in_low_temp_limit(_pressure)
     mass=mass_effective(_pressure)*atomic_mass # effective mass [kg]
     particle_density=1/(np.pi**2)*np.power(2*mass/Plankbar_const**2,3/2)*np.sqrt(Fermi_momentum(_pressure)**2/(2*mass))*Boltzmann_const*_temperature*np.exp(-gap/(Boltzmann_const*_temperature)) # QP number density, eq.31
@@ -140,7 +141,7 @@ def Toy(_energy,_pressure,_temperature,_diameter):
     print("Base width:      ",f_base*1000, " mHz")
     print("Width variation: ",delta*1000,  " mHz")
     print("t_w: ",t_w, "s")
-    print("Bandwidth: ",np.pi*f_base/2, " Hz")
+    print("Bandwidth: ",min(np.pi*f_base/2, lockin_bandwidth), " Hz")
     
     t = np.linspace(4.5, 50, 1000) # time
 

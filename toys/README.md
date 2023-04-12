@@ -1,6 +1,6 @@
 ## Toys:
 
-Single configuration file, common to all the scripts
+Single configuration file, common for all the scripts:
 ```
 config.py
 ```

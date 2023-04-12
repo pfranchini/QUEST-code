@@ -59,7 +59,6 @@ N = 100  # number of toys
 verbose=False  # verbosity for plotting
 
 unused = 0.0
-## LOCKIN parameters ==========================================                                                                                                            
 
 # ===========================================================
 

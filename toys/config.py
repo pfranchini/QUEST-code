@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 ##############################################################
 ##
 ##  List of parameters common to all the toys
@@ -9,29 +11,32 @@ import numpy as np
 
 ## Cell:  ####################################################
 
-volume = 1e-6      # [m^3] Helium-3 cell
+#volume = 1e-6     # [m^3] Helium-3 cell
+volume = 0.315e-6  # [m^3] # Bolometer boxes with 0.5mm hole in 100um PET wall. Estimated time constant 1.0s (https://github.com/slazav/cryo_data/blob/main/f4_data.md)
 
 
 ## Cryostat:  ################################################
 
-pressure = 0     # [bar] pressure
-ttc= 0.1         # T/Tc
-energy = 10;     # [eV] deposited energy
+pressure = 0       # [bar] pressure
+ttc = 0.13         # T/Tc
+energy = 1000;     # [eV] deposited energy
 
 
 ## Wire:  ####################################################
 
+#diameter = 4.5e-6;  # [m] vibrating wire diameter
 diameter = 400e-9;  # [m] vibrating wire diameter
-l = 2e-3            # [m] vibrating wire lenght 
+l = 2e-3            # [m] vibrating wire length
 density = 6.05e3;   # [kg/m^3] Niobium-Titanium (NbTi)
 
 
 ## Lock-in parameters:  ######################################
 
-t_b = 5.00  # [s] decay constant
-amp=100     # gain of the voltage cold amplifier
+t_b = 5.00   # [s] decay constant
+amp = 100    # gain of the voltage cold amplifier
 v_h = amp*np.pi/2*1e-7  # [V] Base voltage height for a v=1mm/s
-v_rms = 7.9*1e-9        # [V] Error on voltage measurement for a lock-in amplifier
+lockin_bandwidth = 10   # [Hz] Bandwidth of the lock-in amplifier
+v_rms = 7.9*1e-9        # [V] Error on voltage measurement for a lock-in amplifier coming from the datasheet, considering a bandwidth of 10 Hz
 
 
 ## SQUID parameters:  ########################################
