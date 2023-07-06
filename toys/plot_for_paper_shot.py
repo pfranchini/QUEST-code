@@ -51,7 +51,8 @@ with open('shot-error.txt') as f:
     x3 = [float(line.split()[0]) for line in lines]
     y3 = [float(line.split()[1]) for line in lines]
 
-ax1.text(0.05, 0.90, 'a', transform=ax1.transAxes, fontsize=16, verticalalignment='top', horizontalalignment='left', weight='bold')
+ax1.text(-0.2, 1, 'a', ha='left', va='top', transform=ax1.transAxes, fontsize=16, weight='bold') # label outside the plot
+#ax1.text(0.05, 0.90, 'a', transform=ax1.transAxes, fontsize=16, verticalalignment='top', horizontalalignment='left', weight='bold') # label inside the plot
 ax1.plot(x1,y1,label='Lock-in amplifier',color='dodgerblue',linestyle='-')
 ax1.plot(x2,y2,label='SQUID readout',color='red',linestyle='--')
 ax1.plot(x3,y3,label='QP shot noise',color='green',linestyle=':')
@@ -81,7 +82,8 @@ with open('shot_toy-error-temperature.txt') as f:
     x3 = [float(line.split()[0]) for line in lines]
     y3 = [float(line.split()[1]) for line in lines]
 
-ax2.text(0.05, 0.90, 'b', transform=ax2.transAxes, fontsize=16, verticalalignment='top', horizontalalignment='left', weight='bold')
+ax2.text(-0.2, 1, 'b', ha='left', va='top', transform=ax2.transAxes, fontsize=16, weight='bold')
+#ax2.text(0.05, 0.90, 'b', transform=ax2.transAxes, fontsize=16, verticalalignment='top', horizontalalignment='left', weight='bold')
 ax2.plot(x1,y1,label='Lock-in amplifier',color='dodgerblue',linestyle='-')
 ax2.plot(x2,y2,label='SQUID readout',color='red',linestyle='--')
 ax2.plot(x3,y3,label='QP shot noise',color='green',linestyle=':')    
@@ -92,6 +94,7 @@ ax2.set_ylabel('Error [%]')
 ax2.set_yscale('log')
 #ax2.legend()
 
+plt.subplots_adjust(left=0.1, top=0.9)
 plt.tight_layout()
 plt.subplots_adjust(wspace=0.3)
 plt.savefig("Error_energy-temperature_comparison.pdf")
@@ -129,7 +132,8 @@ with open('shot_toy-error-diameter.txt') as f:
         x3 = np.append(x3, float(line.split()[0]))
         y3 = np.append(y3, float(line.split()[1]))
 
-ax1.text(0.05, 0.90, 'a', transform=ax1.transAxes, fontsize=16, verticalalignment='top', horizontalalignment='left', weight='bold')
+ax1.text(-0.2, 1, 'a', ha='left', va='top', transform=ax1.transAxes, fontsize=16, weight='bold')
+#ax1.text(0.05, 0.90, 'a', transform=ax1.transAxes, fontsize=16, verticalalignment='top', horizontalalignment='left', weight='bold')
 ax1.plot(x1*1e9,y1,label='Lock-in amplifier',color='dodgerblue',linestyle='-')
 ax1.plot(x2*1e9,y2,label='SQUID readout',color='red',linestyle='--')
 ax1.plot(x3*1e9,y3,label='QP shot noise',color='green',linestyle=':')
@@ -155,7 +159,8 @@ with open('shot_toy-error-pressure.txt') as f:
     x3 = [float(line.split()[0]) for line in lines]
     y3 = [float(line.split()[1]) for line in lines]
 
-ax2.text(0.05, 0.90, 'b', transform=ax2.transAxes, fontsize=16, verticalalignment='top', horizontalalignment='left', weight='bold')
+ax2.text(-0.2, 1, 'b', ha='left', va='top', transform=ax2.transAxes, fontsize=16, weight='bold')
+#ax2.text(0.05, 0.90, 'b', transform=ax2.transAxes, fontsize=16, verticalalignment='top', horizontalalignment='left', weight='bold')
 ax2.plot(x1,y1,label='Lock-in amplifier',color='dodgerblue',linestyle='-')
 ax2.plot(x2,y2,label='SQUID readout',color='red',linestyle='--')
 ax2.plot(x3,y3,label='QP shot noise',color='green',linestyle=':')
