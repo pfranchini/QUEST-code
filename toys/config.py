@@ -18,7 +18,7 @@ volume = 0.315e-6  # [m^3] # Bolometer boxes with 0.5mm hole in 100um PET wall. 
 ## Cryostat:  ################################################
 
 pressure = 0       # [bar] pressure
-ttc = 0.13         # T/Tc
+ttc = 0.12         # T/Tc
 energy = 1000;     # [eV] deposited energy
 
 
@@ -50,5 +50,10 @@ phi0 = 2.067833848e-15       # [Wb]
 S = np.power(0.4e-6*phi0,2)  # [Hz^-1]
 M = 10.0e-9  # [H]
 v0 = 1e-3    # [m/sec]
+
+
+## Simulation limits:  #######################################
+
+diameter_max = 5*1000e-9
 
 ##############################################################

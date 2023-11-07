@@ -53,7 +53,7 @@ with open('shot-error.txt') as f:
 
 ax1.text(-0.2, 1, 'a', ha='left', va='top', transform=ax1.transAxes, fontsize=16, weight='bold') # label outside the plot
 #ax1.text(0.05, 0.90, 'a', transform=ax1.transAxes, fontsize=16, verticalalignment='top', horizontalalignment='left', weight='bold') # label inside the plot
-ax1.plot(x1,y1,label='Lock-in amplifier',color='dodgerblue',linestyle='-')
+ax1.plot(x1,y1,label='Conventional readout',color='dodgerblue',linestyle='-')
 ax1.plot(x2,y2,label='SQUID readout',color='red',linestyle='--')
 ax1.plot(x3,y3,label='QP shot noise',color='green',linestyle=':')
 ax1.set_xlabel('Energy [eV]')
@@ -84,7 +84,7 @@ with open('shot_toy-error-temperature.txt') as f:
 
 ax2.text(-0.2, 1, 'b', ha='left', va='top', transform=ax2.transAxes, fontsize=16, weight='bold')
 #ax2.text(0.05, 0.90, 'b', transform=ax2.transAxes, fontsize=16, verticalalignment='top', horizontalalignment='left', weight='bold')
-ax2.plot(x1,y1,label='Lock-in amplifier',color='dodgerblue',linestyle='-')
+ax2.plot(x1,y1,label='Conventional readout',color='dodgerblue',linestyle='-')
 ax2.plot(x2,y2,label='SQUID readout',color='red',linestyle='--')
 ax2.plot(x3,y3,label='QP shot noise',color='green',linestyle=':')    
 ax2.plot(x1, heat_capacity(np.array(x1), A),linestyle=':', marker='',color="black")
@@ -134,7 +134,7 @@ with open('shot_toy-error-diameter.txt') as f:
 
 ax1.text(-0.2, 1, 'a', ha='left', va='top', transform=ax1.transAxes, fontsize=16, weight='bold')
 #ax1.text(0.05, 0.90, 'a', transform=ax1.transAxes, fontsize=16, verticalalignment='top', horizontalalignment='left', weight='bold')
-ax1.plot(x1*1e9,y1,label='Lock-in amplifier',color='dodgerblue',linestyle='-')
+ax1.plot(x1*1e9,y1,label='Conventional readout',color='dodgerblue',linestyle='-')
 ax1.plot(x2*1e9,y2,label='SQUID readout',color='red',linestyle='--')
 ax1.plot(x3*1e9,y3,label='QP shot noise',color='green',linestyle=':')
 ax1.set_xlabel('Diameter [nm]')
@@ -161,7 +161,7 @@ with open('shot_toy-error-pressure.txt') as f:
 
 ax2.text(-0.2, 1, 'b', ha='left', va='top', transform=ax2.transAxes, fontsize=16, weight='bold')
 #ax2.text(0.05, 0.90, 'b', transform=ax2.transAxes, fontsize=16, verticalalignment='top', horizontalalignment='left', weight='bold')
-ax2.plot(x1,y1,label='Lock-in amplifier',color='dodgerblue',linestyle='-')
+ax2.plot(x1,y1,label='Conventional readout',color='dodgerblue',linestyle='-')
 ax2.plot(x2,y2,label='SQUID readout',color='red',linestyle='--')
 ax2.plot(x3,y3,label='QP shot noise',color='green',linestyle=':')
 ax2.set_xlabel('Pressure [bar]')
