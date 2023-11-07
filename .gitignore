@@ -8,4 +8,6 @@
 *.log
 *.txt
 *.out
+*.aux
+*.gz
 output/

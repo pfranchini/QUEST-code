@@ -6,7 +6,7 @@
 \usepackage[sort, numbers]{natbib}
 %\usepackage{graphicx}
 \usepackage{amsmath}
-\usepackage{soul}
+%\usepackage{soul}
 
 \title{Temperature and energy measurements in ultra-low temperature Helium-3}
 \author{P. Franchini}
@@ -24,10 +24,10 @@
 Specific heat capacity $C_V$ as a function of the temperature $T$ (in units of [J/K/m$^3$]) has been calculated from the entropy of a system of independent fermions, quasiparticles~\cite{vollhardt}, as
 
 \begin{equation}
-C_V(T)=2(2\pi)^{1/2}k_BN_0\varDelta\left(\frac{\varDelta}{k_BT}\right)\exp\left(-\frac{\varDelta}{k_BT}\right)
+C_V(T)=2(2\pi)^{1/2}k_BN_0\varDelta\left(\frac{\varDelta}{k_BT}\right)^{3/2}\exp\left(-\frac{\varDelta}{k_BT}\right)
 \end{equation}
 
-where $k_B$ is the Boltzmann constant, $N_0$ is the density of quasiparticle states in the normal phase at Fermi energy for one spin component, $\varDelta$ ($\approx 1.76 k_B T_c$ at 0\,bar) is the average gap energy at low temperature near the critical temperature for superfluidity $T_c$ ($\simeq$930\,$\mu$K at 0\,bar). They all depend on pressure P.
+where $k_B$ is the Boltzmann constant, $N_0$ is the density of quasiparticle states in the normal phase at Fermi energy for one spin component ($m^*k_F/\pi^2\hbar^2=2N_0=N_F$), $\varDelta$ ($\approx 1.76 k_B T_c$ at 0\,bar) is the average gap energy at low temperature near the critical temperature for superfluidity $T_c$ ($\simeq$930\,$\mu$K at 0\,bar). They all depend on pressure P.
 
 $C_V(T)$ has a strong dependency with temperature (fig.~\ref{fig:CvT})
 
@@ -90,6 +90,7 @@ force (in units of length, velocity and diameter), defined as
 \begin{equation}
 F = \frac{\pi}{4}p^2_F v_F N_0 \exp{\left( -\frac{\varDelta}{k_B T} \right)}
 \end{equation}
+where $p_F$ and $v_F$ are respectively the Fermi momentum and velocity.
 
 The resonance width expressed in terms of temperature is
 
@@ -258,7 +259,7 @@ producing a distribution like in~figure~\ref{fig:toy}. To summarize the independ
   \item wire density ($\rho$)
   \item diameter of the oscillating wire (d)
   \item base temperature of the helium ($T_0$)
-  \item decay constant $\tau_b$ \st{and response time $\tau_w$}
+  \item decay constant $\tau_b$
   \item base voltage height ($V_{H_\mathrm{base}}$)
   \item error on the voltage measurement ($\sigma_{V_H}$)
 \end{itemize}

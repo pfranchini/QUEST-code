@@ -30,6 +30,9 @@ from scipy.stats import norm
 # import Tsepelin code
 exec(open("../mod_helium3.py").read())
 
+# import QUEST-DMC code
+exec(open("../mod_quest.py").read())
+
 # Configuration file with all the parameters
 exec(open("config.py").read())
 
@@ -59,45 +62,6 @@ verbose=False  # verbosity for plotting
 unused = 0.0
 
 # ===========================================================
-
-## More routines: ###########################################
-
-def Width_from_Temperature(Temperature,PressureBar,Diameter):
-    
-    gap = energy_gap_in_low_temp_limit(PressureBar)
-    width=np.power(Fermi_momentum(PressureBar),2)*Fermi_velocity(PressureBar)*density_of_states(PressureBar)/(2*density*np.pi*Diameter)*np.exp(-gap/(Boltzmann_const*Temperature))
-    return width
-
-def Temperature_from_Width(Width,PressureBar,Diameter):
-    
-    gap = energy_gap_in_low_temp_limit(PressureBar)
-    temperature=-gap/(Boltzmann_const*np.log( Width*2*density*np.pi*Diameter/(np.power(Fermi_momentum(PressureBar),2)*Fermi_velocity(PressureBar)*density_of_states(PressureBar))))
-    return temperature
-
-def DeltaWidth_from_Energy(E,PressureBar,BaseTemperature,Diameter):
-    # Find delta width from the input energy deposition for a certain base temperature
-
-    # find fit line for the Width variation vs Deposited energy for the base temperature
-    W0=Width_from_Temperature(BaseTemperature,PressureBar,Diameter)
-
-    DQ = np.array([])  # delta energy [eV]
-    DW = np.array([])  # delta width [Hz]    
-    
-    #for dw in np.arange(0,2.5,0.001):  # Delta(Deltaf)
-    for dw in np.arange(0,2.5,0.01):  # Delta(Deltaf)  FASTER
-        T2= Temperature_from_Width(W0+dw,PressureBar,Diameter)
-        T1= Temperature_from_Width(W0,PressureBar,Diameter)
-        DQ = np.append(DQ,(heat_capacity_Cv_B_phase_intergral_from_0(T2, PressureBar) - heat_capacity_Cv_B_phase_intergral_from_0(T1, PressureBar)) * volume * 6.242e+18) # [eV]
-        DW = np.append(DW,dw)
-        
-    # Fit line to extract the slope alpha: DQ = alpha * DW
-    global alpha
-    alpha, _ = np.polyfit(DW, DQ, 1)
-    
-    # Input delta width from input energy
-    deltawidth = E/alpha
-       
-    return deltawidth, alpha
 
 ###########################################################
 
@@ -318,7 +282,7 @@ if __name__ == "__main__":
 
     error = np.array([])
     value = np.array([])
-    Run_Toy_Diameter(150e-9, 1000e-9, 100e-9, pressure, ttc, unused, f2)
+    Run_Toy_Diameter(150e-9, diameter_max, 100e-9, pressure, ttc, unused, f2)
     f2.close()    
 
     # Plot results

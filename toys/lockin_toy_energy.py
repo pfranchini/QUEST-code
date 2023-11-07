@@ -27,6 +27,9 @@ from scipy.stats import norm
 # import Tsepelin code
 exec(open("../mod_helium3.py").read())
 
+# import QUEST-DMC code
+exec(open("../mod_quest.py").read())
+
 # Configuration file with all the parameters
 exec(open("config.py").read())
 
@@ -64,58 +67,6 @@ plt.rcParams.update({'ytick.direction': 'in'})
 N = 100  # number of toys
 verbose=False # verbosity for plotting
 
-
-## More routines: ###########################################
-
-def Width_from_Temperature(Temperature,PressureBar):
-    
-    gap = energy_gap_in_low_temp_limit(PressureBar)
-    width=np.power(Fermi_momentum(PressureBar),2)*Fermi_velocity(PressureBar)*density_of_states(PressureBar)/(2*density*np.pi*diameter)*np.exp(-gap/(Boltzmann_const*Temperature))
-    return width
-
-def Temperature_from_Width(Width,PressureBar):
-    
-    gap = energy_gap_in_low_temp_limit(PressureBar)
-    temperature=-gap/(Boltzmann_const*np.log( Width*2*density*np.pi*diameter/(np.power(Fermi_momentum(PressureBar),2)*Fermi_velocity(PressureBar)*density_of_states(PressureBar)))\
-    )
-    return temperature
-
-def DeltaWidth_from_Energy(E,PressureBar,BaseTemperature):
-    # Find delta width from the input energy deposition for a certain base temperature
-
-    # find fit line for the Width variation vs Deposited energy for the base temperature
-    W0=Width_from_Temperature(BaseTemperature,PressureBar)
-        
-    DQ = np.array([])  # delta energy [eV]
-    DW = np.array([])  # delta width [Hz]    
-    
-    #for dw in np.arange(0,2.5,0.001):  # Delta(Deltaf)
-    for dw in np.arange(0,2.5,0.01):  # Delta(Deltaf)  FASTER
-        T2= Temperature_from_Width(W0+dw,PressureBar)
-        T1= Temperature_from_Width(W0,PressureBar)
-        DQ = np.append(DQ,(heat_capacity_Cv_B_phase_intergral_from_0(T2, PressureBar) - heat_capacity_Cv_B_phase_intergral_from_0(T1, PressureBar)) * volume * 6.242e+18) # [eV]
-        DW = np.append(DW,dw)
-        
-    # Draw the plot 
-    '''
-    if verbose and E==10000: 
-        plt.plot(DQ/1e3,DW*1e3,label='DQvsDW')
-        plt.title('Width variation vs Deposited energy')
-        plt.xlim([0, 100])
-        plt.xlabel('$\Delta$Q [KeV]')
-        plt.ylabel('$\Delta(\Delta f)$ [mHz]')
-        plt.show()
-    '''
-    
-    # Fit line to extract the slope alpha: DQ = alpha * DW
-    global alpha
-    alpha, _ = np.polyfit(DW, DQ, 1)
-    
-    # Input delta width from input energy
-    deltawidth = E/alpha
-       
-    return deltawidth, alpha
-
 ###########################################################
 
 # Define the noise function for lock-in
@@ -136,10 +87,10 @@ def Toy(energy):
     print()
     print("Energy:      ",str(energy), " eV")
     # Input delta(width) from input energy
-    delta, _ = DeltaWidth_from_Energy(energy,pressure,t_base)
+    delta, _ = DeltaWidth_from_Energy(energy,pressure,t_base,diameter)
     
     # Base width from the input base temperature
-    f_base = Width_from_Temperature(t_base,pressure)
+    f_base = Width_from_Temperature(t_base,pressure,diameter)
 
     # Response time
     t_w = 1/(np.pi*f_base)
@@ -267,10 +218,10 @@ if __name__ == "__main__":
     # Calculates alpha_prime for the error propagation
     global alpha_prime
     epsilon=1e-9
-    _, alpha1 = DeltaWidth_from_Energy(1000, pressure, t_base - epsilon/2)
-    _, alpha2 = DeltaWidth_from_Energy(1000, pressure, t_base + epsilon/2)
+    _, alpha1 = DeltaWidth_from_Energy(1000, pressure, t_base - epsilon/2, diameter)
+    _, alpha2 = DeltaWidth_from_Energy(1000, pressure, t_base + epsilon/2, diameter)
     gap = energy_gap_in_low_temp_limit(pressure)
-    alpha_prime = (alpha2-alpha1)/epsilon * Boltzmann_const/gap * np.power(t_base,2) * 1/Width_from_Temperature(t_base,pressure)
+    alpha_prime = (alpha2-alpha1)/epsilon * Boltzmann_const/gap * np.power(t_base,2) * 1/Width_from_Temperature(t_base,pressure,diameter)
     print("alpha_prime",alpha_prime)
 
     # Single toy run for a defined energy [eV]
