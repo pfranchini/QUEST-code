@@ -54,6 +54,6 @@ v0 = 1e-3    # [m/sec]
 
 ## Simulation limits:  #######################################
 
-diameter_max = 5*1000e-9
+diameter_max = 1000e-9  # [m] vibrating wire max diameter
 
 ##############################################################

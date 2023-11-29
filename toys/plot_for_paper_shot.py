@@ -9,8 +9,8 @@ Two plots:
 
 Input: txt files produced by the toy scripts.
 Usage:  
-   cd output direcotry
-   python ../../plot_for_paper_shot.py
+   cd 'output' directory
+   python ../plot_for_paper_shot.py
 
 '''
 
@@ -140,7 +140,7 @@ ax1.plot(x3*1e9,y3,label='QP shot noise',color='green',linestyle=':')
 ax1.set_xlabel('Diameter [nm]')
 ax1.set_ylabel('Error [%]')
 ax1.set_yscale('log')
-ax1.legend()
+ax1.legend(loc='center left', bbox_to_anchor=(0.0, 0.4))
 
 # Pressure:
 
