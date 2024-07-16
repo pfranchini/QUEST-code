@@ -30,24 +30,7 @@ import AMlib as afp
 
 #===========================================================
 
-# Input:
-time=1677021898
-wire=1 # (1,2)
-
-energy_pdf = np.arange(0, 5.0e6, 1)  # energy spectrum [ev]
-
-rate = 0.01      # [events/second], rate of events
-max_time = 3600  # [second], total lenght of the sample
-sampling = 100    # [Hz], sampling (points per second)
-
-filename = "output.txt"
-
-verbose = False
-
-#===========================================================
-
 # Function from Adam (but not in AMlib)
-fs=sampling
 def getOFtemplate(template,noisefft,zeroDC=False,zeroEnds=False):
     '''
     Function to create OF template for Convolution. Includes correct normalization and options to remove DC or zero Ends.
@@ -71,14 +54,14 @@ def getOFtemplate(template,noisefft,zeroDC=False,zeroEnds=False):
         tfN+=-np.mean(list(tfN[:nbins])+list(tfN[-nbins:]))
     return tfN
 
-def getBaselineResolution(template,noiseFFT,usePeriodogram=False,fs=fs):
+def getBaselineResolution(template,noiseFFT,usePeriodogram,fs):
     if usePeriodogram:
         #Skip DC bin [0] which has no bearing on resolution, and is often 0 or inf
         return np.sum(2*scs.periodogram(template,fs=fs)[1][1:] / noiseFFT[1:]**2 )**-0.5  #Periodogram is ^2 , but I always ^(1/2) when handling noiseFFT
     else:
         return np.sum(2*np.abs(np.fft.rfft(template)[1:])**2 / noiseFFT[1:]**2 )**-0.5
     
-def psd2fft(psd,fs=fs):
+def psd2fft(psd,fs):
     psdN = psd*1.
     psdN[-1]=psdN[-1]*2**0.5
     return psdN * (fs*(len(psdN)-1))**0.5
@@ -107,6 +90,7 @@ if __name__ == "__main__":
 
     # Parsing arguments
     parser = argparse.ArgumentParser()
+    parser.add_argument('--time',type=int, help='Starting time [s]', default=1675908556)
     parser.add_argument('--config',type=str, help='Config file', default='config.py')
     parser.add_argument('--noise',type=str, help='Noise model (normal|shot|real)', default='normal')
     args = parser.parse_args()
@@ -114,6 +98,11 @@ if __name__ == "__main__":
     print('Config file:\t',args.config)
     print('Noise model:\t',args.noise)
 
+    # Read config file
+    exec(open(args.config).read())
+    fs=sampling
+    print('Diameter:\t',diameter*1e9,'[nm]')
+    
     # Real settings and noise from Adam's FFT calculated on data for a 'wire'
     if wire==1:
         noiseFFTs = pd.read_csv('data/Bol-1-NoiseFFTs(Volts).csv') # (wrong naming, it contains a sqrt(PSD))
@@ -123,13 +112,13 @@ if __name__ == "__main__":
         noiseSum  = pd.read_csv('data/Bol-1-NoiseSummary.csv')
 
     # Find the row number of the 'time' given as input
-    row = noiseSum[noiseSum['Time (s)'] == time].index
+    row = noiseSum[noiseSum['Time (s)'] == args.time].index
     if row.empty:
-        print("No row found for the time:", time)
+        print("No row found for the time:", args.time)
         exit()
     row=row[0] # row number (starting from 0) in the AM/Bol-1-NoiseFFTs(Volts).csv file, corresponding to 2 hours of data
     sumI = noiseSum.iloc[row]
-    print('Time:\t',str(int(sumI['Time (s)']))) # time
+    print('Time:\t\t',str(int(sumI['Time (s)']))) # time
 
     # Pressure
     pressure = noiseSum.iloc[row]['Pressure (bar)']
@@ -185,7 +174,7 @@ if __name__ == "__main__":
         original_x = np.linspace(0, 1, len(noisePSD))
         new_x = np.linspace(0, 1, int(len(total)/2+1))
         noisePSD_interpolated = np.interp(new_x, original_x, noisePSD)
-        total = np.fft.irfft( np.fft.rfft(total)*psd2fft(noisePSD_interpolated)/len(total)**0.5 )
+        total = np.fft.irfft( np.fft.rfft(total)*psd2fft(noisePSD_interpolated,fs)/len(total)**0.5 )
     else:
         total = np.zeros_like(t)
     
@@ -233,11 +222,13 @@ if __name__ == "__main__":
     #=============================
 
     # Add non-constant baseline:
+    ''' Skipping for now since not much effect in 2 hour traces
     print('\nAdding non-constant baseline...')
     # calculate temperature for each time point
     temperature = (ttc + ttc_rise * t) * temperature_critical_superfluid(pressure)
     # calculate f_base for each temperature
     f_base = np.array([Width_from_Temperature(temp, pressure, diameter) for temp in tqdm(temperature)])
+    '''
     
     total += f_base  # [Hz]
     truth += f_base  # [Hz]
@@ -324,7 +315,7 @@ if __name__ == "__main__":
 
     # resolution
     calibration = int(sumI['Calibration (Heat+Pulse shape) (keV/Hz)'])  # [MeV/Hz]  # (error in the colum's name in the csv file)
-    resB = getBaselineResolution(template,noisePSD_extracted,usePeriodogram=True)  # [Hz]
+    resB = getBaselineResolution(template,noisePSD_extracted,usePeriodogram=True,fs=fs)  # [Hz]
     print(f'\nBaseline Resolution from toy:  {np.round(resB,3)} [Hz]')
     print(f'Baseline Resolution from toy:  {np.round(resB*calibration*1e6,3)} [eV]')
     res_data=sumI['Measured OF Resolution (eV)']

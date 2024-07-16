@@ -2,12 +2,25 @@
 
 ##############################################################
 ##
-##  List of parameters common to all the toys
+##  List of parameters
 ##
 ##############################################################
 
 import numpy as np
 
+## Simulation: ###############################################
+
+wire = 1 # (1,2)
+
+energy_pdf = np.arange(0, 5.0e6, 1)  # energy spectrum [ev]
+
+rate = 0.01      # [events/second], rate of events
+max_time = 36000   # [second], total lenght of the sample
+sampling = 100    # [Hz], sampling (points per second)
+
+filename = "output.txt"
+
+verbose = False
 
 ## Cell:  ####################################################
 
@@ -18,6 +31,8 @@ volume = 0.315e-6  # [m^3] # Bolometer boxes with 0.5mm hole in 100um PET wall. 
 diameter = 4.5e-6;  # [m] vibrating wire diameter
 l = 2e-3            # [m] vibrating wire length
 density = 6.05e3;   # [kg/m^3] Niobium-Titanium (NbTi)
+
+
 
 '''
 ## Lock-in parameters:  ######################################
