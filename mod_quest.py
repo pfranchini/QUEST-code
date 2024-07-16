@@ -14,7 +14,7 @@ def Width_from_Temperature(Temperature,PressureBar,Diameter):
     N_0=density_of_states(PressureBar)/2 # density of quasiparticle states in the normal phase at Fermi energy for one spin component = N_F/2
     width=np.power(Fermi_momentum(PressureBar),2)*Fermi_velocity(PressureBar)*N_0/(2*density*np.pi*Diameter)*np.exp(-gap/(Boltzmann_const*Temperature))
 
-    return width
+    return width.item()
 
 def Temperature_from_Width(Width,PressureBar,Diameter):
     """
