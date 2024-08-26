@@ -15,10 +15,10 @@ wire = 1 # (1,2)
 energy_pdf = "energy_pdf.txt"  # energy spectrum [ev]
 
 rate = 0.02      # [events/second], rate of events
-max_time = 36000   # [second], total lenght of the sample
+max_time = 3600   # [second], total lenght of the sample
 sampling = 100    # [Hz], sampling (points per second)
 
-filename = "output.txt"
+filename = "output.txt"  # output's filename
 
 verbose = False
 
