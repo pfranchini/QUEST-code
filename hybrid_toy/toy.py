@@ -1,11 +1,11 @@
 '''
- - Full toy simulation of a train of pulses.
+ - QUEST-DMC WP1 full toy simulation of a train of pulses from an energy pdf
  - Analysis of the train of pulses:
     * noise
     * peak finding
     * resolution
 
-P. Franchini 7/2024
+P. Franchini 8/2024
 '''
 
 import os
@@ -184,14 +184,29 @@ if __name__ == "__main__":
     
     # generate N random start times
     starts = np.sort(np.random.randint(0,max_time,N))
-        
+
+    # read energy spectrum
+    pdf = np.loadtxt(energy_pdf, skiprows=1)
+    energy_values = pdf[:, 0]
+    energy_weights = pdf[:, 1]
+    energy_probabilities = energy_weights / energy_weights.sum()
+
+    # Plot energy values against weights
+    plt.plot(energy_values, energy_weights, marker='o', linestyle='-', color='b')
+    plt.xlabel('Energy')
+    plt.ylabel('Entries')
+    plt.title('Energy PDF')
+    plt.grid(True)
+    plt.show()
+
+
     # generate a train of N events
     print('\nGenerate events...')
     for start in tqdm(starts):
 
         # randomised event energy
-        energy = np.random.choice(energy_pdf)
-
+        energy = np.random.choice(energy_values, p=energy_probabilities)
+    
         # real increased temperature wrt the starting ttc of the config
         temperature=(ttc+ttc_rise*start)*temperature_critical_superfluid(pressure).item()
 
@@ -222,7 +237,8 @@ if __name__ == "__main__":
     #=============================
 
     # Add non-constant baseline:
-    ''' Skipping for now since not much effect in 2 hour traces
+    '''
+    # Skipping for now since not much effect in 2 hour traces
     print('\nAdding non-constant baseline...')
     # calculate temperature for each time point
     temperature = (ttc + ttc_rise * t) * temperature_critical_superfluid(pressure)

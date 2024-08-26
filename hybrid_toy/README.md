@@ -1,6 +1,14 @@
 ## Hybrid-Toy Simulation
 
-Usage:
+### Description:
+ - QUEST-DMC WP1 full toy simulation of a train of pulses from an energy pdf
+ - Reads AM results from the WP1 Fridge 4 run in `/data` to simulate a train of pulses given a specific run (`--time`)
+ - Analysis of the train of pulses:
+    * noise
+    * peak finding
+    * resolution
+
+### Usage:
 ```
 toy.py [-h] [--time TIME] [--config CONFIG] [--noise NOISE]
 

@@ -12,9 +12,9 @@ import numpy as np
 
 wire = 1 # (1,2)
 
-energy_pdf = np.arange(0, 5.0e6, 1)  # energy spectrum [ev]
+energy_pdf = "energy_pdf.txt"  # energy spectrum [ev]
 
-rate = 0.01      # [events/second], rate of events
+rate = 0.02      # [events/second], rate of events
 max_time = 36000   # [second], total lenght of the sample
 sampling = 100    # [Hz], sampling (points per second)
 
