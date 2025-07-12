@@ -36,8 +36,8 @@ import AMlib as afp
 def read_root(simulation,simulation_events,simulation_rate):
     '''
     Read a g4quest output root file to generate a PDF for the events injection.
-      Input: root file
-      Output: expected deposited rate [ev/second], (energy_values, energy_probabilities)
+      Arguments: root file
+      Returns: expected deposited rate [ev/second], (energy_values, energy_probabilities)
     '''
 
     time=86400 # [s]
@@ -50,7 +50,7 @@ def read_root(simulation,simulation_events,simulation_rate):
     bin_width = np.diff(bins)[0]  # All bins are uniform, so one is enough
     simulation_weight_per_event = (simulation_rate / simulation_events) * time / bin_width
     simulation_weights = np.full_like(pdf_energy, simulation_weight_per_event)    
-    plt.hist(pdf_energy,  bins=bins, weights=simulation_weights, alpha=0.5, histtype="step",  linewidth=2, label='Simulation', color='orange') # [eV]
+    plt.hist(pdf_energy,  bins=bins, weights=simulation_weights, alpha=0.5, histtype="step",  linewidth=2, label='Simulation', color='orange') # [keV]
     plt.title('Background simulation')
     plt.xlabel('Deposited energy [keV]')
     plt.yscale('log')
@@ -66,6 +66,7 @@ def read_root(simulation,simulation_events,simulation_rate):
     # Plot energy values against weights
     plt.plot(energy_values, energy_probabilities, marker='o', linestyle='-', color='b') # [eV]
     plt.xlabel('Energy [ev]')
+    plt.yscale('log')
     plt.ylabel('Entries')
     plt.title('Energy PDF')
     plt.grid(True)
@@ -76,9 +77,11 @@ def read_root(simulation,simulation_events,simulation_rate):
     return rate, energy_values, energy_probabilities
 
 
-def inject_events(rate, energy_values, energy_probabilities, total, truth):
+def inject_events(rate, energy_values, energy_probabilities, total):
     '''
     Inject a train of events in a baseline
+    Arguments: rate, energy_values, energy_probabilities, total
+    Ruturn: truth array
     '''
     # random Poisson number of events within the max_time
     N = np.random.poisson(max_time*rate) 
@@ -86,6 +89,10 @@ def inject_events(rate, energy_values, energy_probabilities, total, truth):
     
     # generate N random start times
     starts = np.sort(np.random.randint(0,max_time,N))
+
+    # Truth values, full length sample with correct sampling
+    t = np.linspace(0, max_time, max_time*sampling) 
+    truth = np.zeros_like(t) # to store truth values
 
     # generate a train of N events
     print('\nGenerate events...')
@@ -121,6 +128,7 @@ def inject_events(rate, energy_values, energy_probabilities, total, truth):
         total += deltaf
         truth += deltaf
 
+    return truth
 
 # Function from Adam (but not in AMlib)
 def getOFtemplate(template,noisefft,zeroDC=False,zeroEnds=False):
@@ -184,7 +192,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--time',type=int, help='Starting time [s]', default=1675908556)
     parser.add_argument('--config',type=str, help='Config file', default='config.py')
-    parser.add_argument('--noise',type=str, help='Noise model (normal|shot|real)', default='normal')
+    parser.add_argument('--noise',type=str, help='Noise model (none|normal|shot|real)', default='normal')
 
     # Read config file
     args = parser.parse_args()
@@ -193,82 +201,56 @@ if __name__ == "__main__":
     print('Noise model:\t',args.noise)
     
     exec(open(args.config).read())
-    fs=sampling
     print('Diameter:\t',diameter*1e9,'[nm]')
-    
-    # Real settings and noise from Adam's FFT calculated on data for a 'wire'
-    if wire==1:
-        noiseFFTs = pd.read_csv('../data/Bol-1-NoiseFFTs(Volts).csv') # (wrong naming, it contains a sqrt(PSD))
-        noiseSum  = pd.read_csv('../data/Bol-1-NoiseSummary.csv')
-    elif wire==2:
-        noiseFFTs = pd.read_csv('../data/Bol-1-NoiseFFTs(Volts).csv') # (wrong naming, it contains a sqrt(PSD))
-        noiseSum  = pd.read_csv('../data/Bol-1-NoiseSummary.csv')
-
-    # Find the row number of the 'time' given as input
-    row = noiseSum[noiseSum['Time (s)'] == args.time].index
-    if row.empty:
-        print("No row found for the time:", args.time)
-        exit()
-    row=row[0] # row number (starting from 0) in the AM/Bol-1-NoiseFFTs(Volts).csv file, corresponding to 2 hours of data
-    sumI = noiseSum.iloc[row]
-
-    
-    # Pressure
     print('Pressure:\t',pressure,'[bar]')
 
     # Starting temperature
     print('Starting Temperature:\t',temperature*1e6,'[uK]')
     ttc = temperature/temperature_critical_superfluid(pressure)
     print('Starting T/Tc:\t',ttc)
-            
+    f_base = Width_from_Temperature(temperature, pressure, diameter)
+    print('Base width [Hz]\t:', f_base)
+    
     # Increase of temperature (or T/Tc) vs time
     #ttc_rise = ((noiseSum.iloc[row+1]['Temperature (K)']-noiseSum.iloc[row]['Temperature (K)'])/\
     #        (noiseSum.iloc[row+1]['Time (s)']-noiseSum.iloc[row]['Time (s)']))  # [1/second], increase of T/Tc vs time
     #print('Temperature raising:\t',ttc_rise*1e6*3600,'[uK/h]')
 
-    # Real noise
-    freqs    = np.array(noiseFFTs['Freqs'])
-    noisePSD = np.array(noiseFFTs[str(int(sumI['Time (s)']))]) # sqrt(PSD) [V/sqrt(HZ)] from the Noise.csv file, given a time 
-    noisePSD[0]=0
-    #noiseFFT=psd2fft(noisePSD) # FFT
-    conversion = int(sumI['df/V approx. conversion']) # df/V
-    noisePSD = noisePSD*conversion # PSD' [Hz/sqrt[Hz]]
-    #noisePSDI = interpolate.interp1d(freqs, noisePSD) # interpolated
-    
-    # Real parameters for the template
-    riseT = sumI['Template Rise Times (1/pi*df) (s)'] # riseT
-    fallT = sumI['Template Fall Times (fit) (s)'] + sumI['Template Rise Times (1/pi*df) (s)'] # fallT + riseT
-    t_w = riseT
-    t_b = fallT + riseT
-    
-    #if verbose:
-    plt.title('Noise PSD from data')
-    plt.loglog(freqs,noisePSD)
-    plt.xlabel('[Hz]')
-    plt.ylabel('Noise PSD $\Delta$f/$\sqrt{Hz}$')
-    plt.grid(which='minor',alpha=0.3)
-    plt.show()
+    if args.noise=='real':
+        # Load the noise FFT data
+        fft_df = pd.read_csv(noise)
+        freqs = fft_df['freq [Hz]'].values
+        amplitudes = fft_df['fft amplitude'].values
+        
+        #if verbose:
+        plt.figure(figsize=(10,4))
+        plt.title('Noise FFT from ND3 data - '+noise)
+        plt.loglog(freqs,amplitudes)
+        plt.xlabel('Frequency [Hz]')
+        plt.ylabel('Amplitude')
+        plt.grid(which='minor',alpha=0.3)
+        plt.show()
     
     # Output filename for the true MC
     base, ext = os.path.splitext(filename)
     filename_truth = f"{base}_truth{ext}"
     with open(filename_truth, 'w') as file:
         file.write(f"#time [s] energy [eV]\n")
-            
-    # full length sample, with correct sampling
-    t = np.linspace(0, max_time, max_time*sampling) 
-    truth = np.zeros_like(t) # to store truth values
 
-    if args.noise=='real':
-        # add noise to the baseline
-        total = np.random.normal(0,1,len(t))
+    t = np.linspace(0, max_time, max_time*sampling) 
+    total = np.zeros_like(t)
+
+    #if args.noise=='real':
         
-        original_x = np.linspace(0, 1, len(noisePSD))
-        new_x = np.linspace(0, 1, int(len(total)/2+1))
-        noisePSD_interpolated = np.interp(new_x, original_x, noisePSD)
-        total = np.fft.irfft( np.fft.rfft(total)*psd2fft(noisePSD_interpolated,fs)/len(total)**0.5 )
-    else:
-        total = np.zeros_like(t)
+        # add noise to the baseline
+        #total = np.random.normal(0,1,len(t))
+        
+        #original_x = np.linspace(0, 1, len(noisePSD))
+        #new_x = np.linspace(0, 1, int(len(total)/2+1))
+        #noisePSD_interpolated = np.interp(new_x, original_x, noisePSD)
+        #total = np.fft.irfft( np.fft.rfft(total)*psd2fft(noisePSD_interpolated,fs)/len(total)**0.5 )
+    #else:
+    #
 
     #============================================================
         
@@ -278,15 +260,19 @@ if __name__ == "__main__":
     energy_values=cosmics_energy_values
     energy_probabilities=cosmics_energy_probabilities
 
-    inject_events(cosmics_rate, cosmics_energy_values, cosmics_energy_probabilities, total, truth)
-    inject_events(source_rate, source_energy_values, source_energy_probabilities, total, truth)
+    cosmics_truth = inject_events(cosmics_rate, cosmics_energy_values, cosmics_energy_probabilities, total)
+    source_truth = inject_events(source_rate, source_energy_values, source_energy_probabilities, total)
     
     #=============================
 
-    '''
-    # Add non-constant baseline:
+    # Adds a constant baseline:
+    #total += f_base  # [Hz]
+    #cosmics_truth += f_base  # [Hz]
+    #source_truth += f_base  # [Hz]
+   
 
-    # Skipping for now since not much effect in 2 hour traces
+    '''
+    # Add non-constant baseline:    # Skipping for now since not much effect in 2 hour traces
     print('\nAdding non-constant baseline...')
     # calculate temperature for each time point
     temperature = (ttc + ttc_rise * t) * temperature_critical_superfluid(pressure)
@@ -300,10 +286,44 @@ if __name__ == "__main__":
     print('\nAdding noise...')
     if args.noise=='normal':
         for i in tqdm(range(len(total))):
-            total[i] = np.random.normal(total[i], total[i]/1000) # FIX ME
+            total[i] = np.random.normal(total[i], total[i]/10000)  # FIX ME
     if args.noise=='shot':
         for i in tqdm(range(len(total))):
             total[i] = np.random.normal(total[i], shot_noise(total[i],f_base[i],pressure,temperature[i]))
+    if args.noise=='real':
+
+        n_samples = max_time*sampling
+        
+        # 2. Compute the frequency bins needed for np.fft.irfft
+        target_fft_freqs = np.fft.rfftfreq(n_samples, d=1/sampling)
+        
+        # 3. Interpolate amplitude values to match FFT bins
+        interp_amplitudes = np.interp(target_fft_freqs, freqs, amplitudes)
+        
+        # 4. Apply random phase to create complex FFT spectrum
+        random_phases = np.exp(1j * 2 * np.pi * np.random.rand(len(interp_amplitudes)))
+        spectrum = interp_amplitudes * random_phases
+        
+        # 5. Inverse FFT to generate noise in time domain
+        noise = np.fft.irfft(spectrum, n=n_samples)
+        
+        # scale noise if desired
+        scale_factor = 1e4  # noise strength
+        scaled_noise = noise * scale_factor
+        
+        # add noise to the signal
+        noisy_trace = total + scaled_noise
+        
+        plt.figure(figsize=(15, 5))
+        plt.plot(total, label='Original Trace')
+        plt.plot(noisy_trace, label='Trace + FFT Noise', alpha=0.7)
+        plt.legend()
+        plt.xlabel('Sample Index')
+        plt.ylabel('Frequency (Hz)')
+        plt.title('Frequency Trace with Added FFT-based Noise')
+        plt.tight_layout()
+        plt.show()
+
         
     # Output:
     print('\nWriting output to',filename,'...')
@@ -316,8 +336,11 @@ if __name__ == "__main__":
     #if verbose:
     plt.figure(figsize=(15,5))
     plt.plot(t, total, linestyle='',marker='.', color="black", label='Fake data')
-    plt.plot(t, truth, linestyle='--', color="green", label='Truth')
+    plt.plot(t, noisy_trace, linestyle='-', color="red", alpha=0.7, label='Fake data + FFT Noise')
+    plt.plot(t, cosmics_truth, linestyle='--', color="orange", label='Cosmics truth')
+    plt.plot(t, source_truth, linestyle='--', color="green", label='Source truth')
     plt.xlabel('time [s]')
+    plt.yscale('linear')
     plt.ylabel('$\Delta f$ [Hz]')
     plt.legend()
     plt.show()
@@ -325,6 +348,13 @@ if __name__ == "__main__":
     #=======================================
 
     quit()
+
+
+
+    
+
+
+
     
     print('\nAnalysis...')
     
