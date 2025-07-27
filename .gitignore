@@ -10,4 +10,6 @@
 *.out
 *.aux
 *.gz
+*.csv
 output/
+__pycache__

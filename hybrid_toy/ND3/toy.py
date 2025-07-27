@@ -28,8 +28,8 @@ exec(open("../../mod_helium3.py").read())
 exec(open("../../mod_quest.py").read())
 
 # import Adam M. library
-sys.path.append('../')
-import AMlib as afp
+#sys.path.append('../')
+#import AMlib as afp
 
 #===========================================================
 
