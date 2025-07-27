@@ -10,6 +10,9 @@ import numpy as np
 
 ## Simulation: ###############################################
 
+verbose = False
+plot = False
+
 # g4quest output [MeV]
 cosmics='/data/questdmc/users/franchinip/QUEST/ND3/cosmics/output-b/cosmics.root'
 source='/data/questdmc/users/franchinip/QUEST/ND3/source/output/source.root'
@@ -23,30 +26,32 @@ cosmics_rate=6e3  # [ev/s], activity*surface of the CRY generator
 source_rate=30e3  # [ev/s], 30 kBq Fe55 source
 
 # noise
-noise='Run23_8mA_01V_wcorr_fft.csv'
+fft_file='Run23_8mA_01V_wcorr_fft.csv'
+fft_file='~/Run23_8mA_01V_wcorr_fft-withnegatives.csv'
+fft_file='~/Run23_8mA_01V_wcorr_fft-onlypositive.csv'
 
-max_time = 3600   # [second], total lenght of the sample
+max_time = 3600*1   # [second], total lenght of the sample
 sampling = 100    # [Hz], sampling (points per second)
 
 filename = "output.txt"  # output's filename
 
-verbose = True
-
 ## Cell:  ####################################################
 
-volume = 1e-8  # [m^3] # ND3 bolometer box
+volume = 0.173999e-6  # [m^3] # ND3 bolometer box
 
 ## Wire:  ####################################################
 
-diameter = 400e-9;  # [m] vibrating wire diameter
-l = 2e-3            # [m] vibrating wire length
-density = 6.05e3;   # [kg/m^3] Niobium-Titanium (NbTi)
+diameter = 400e-9  # [m] vibrating wire diameter
+l = 2e-3           # [m] vibrating wire length
+density = 6.05e3   # [kg/m^3] Niobium-Titanium (NbTi)
 
 pressure = 18.5        # [bar]
 temperature = 0.32e-3  # [K]
 
 t_b = 1
 t_w = 0.5
+
+
 '''
 ## Lock-in parameters:  ######################################
 
