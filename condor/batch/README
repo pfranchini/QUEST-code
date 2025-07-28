@@ -1,0 +1,29 @@
+
+Code to submit Condor jobs both for rethrow (2 steps) and non-rethrow.
+Used for ND3 simulation as per
+https://docs.google.com/spreadsheets/d/1L5FaA7IRJq67fO6YS_xwYDqFpHOwS6D3kYcJkqm3gXs/edit?gid=0#gid=0
+https://docs.google.com/spreadsheets/d/1L5FaA7IRJq67fO6YS_xwYDqFpHOwS6D3kYcJkqm3gXs/edit?gid=0#gid=0
+
+PF 26/06/2025
+
+
+- Non-Rethrow:
+  cd code
+  ./submit.sh <start> <stop> <volume> <ion>
+  [merge all the output in <volume>-<ion>/output/ and counts root files and succeeded jobs using ./count.sh <directory>]
+
+
+- Rethrow:
+  * step1
+     cd code-rethrow/code-a
+     ./submit.sh <start> <stop> <volume> <ion>
+     [merge all the output in <volume>-<ion>/output-a/merge.root: hadd -f -k -j 10 merge.root */*.root]
+  * step2
+     cd code-rethrow/code-b
+     ./submit.sh <start> <stop> <volume> <ion>
+     (which will use the <volume>-<ion>/output-a/merge.root)
+
+  
+
+
+

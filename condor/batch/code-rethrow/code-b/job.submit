@@ -1,0 +1,35 @@
+
+Universe   = vanilla
+Requirements = (OpSysName == "AlmaLinux")
+
+basedir    = /data/questdmc/users/franchinip/QUEST/ND3/$(volume)-$(ion)/output-b
+
+Executable = /data/questdmc/users/franchinip/QUEST/ND3/batch/code-rethrow/code-b/job.sh
+arguments = $(ProcId) $(job) $(basedir) $(volume) $(ion)
+
+jobdir  = $(basedir)/$(job)
+
+input   = /dev/null
+
+include command : mkdir -p $(jobdir)
+
+# direct logging and screen out
+output = $(jobdir)/job-$(ProcId).out
+error  = $(jobdir)/job-$(ProcId).err
+log    = $(jobdir)/job-$(ProcId).log
+
+# resources
+#request_cpus = 1
+#request_disk = 500MB
+request_memory = 4000MB
+
+# queue name
+#+JobFlavour = "short"
+#+JobFlavour = "medium"
+
+#ShouldTransferFiles = YES
+#when_to_transfer_output = ON_EXIT_OR_EVICT
+
+# number of identical jobs
+Queue 100
+
