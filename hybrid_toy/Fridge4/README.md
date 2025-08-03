@@ -1,4 +1,4 @@
-## Hybrid-Toy Simulation
+## Hybrid-Toy Simulation for Fridge4
 
 ### Description:
  - QUEST-DMC WP1 full toy simulation of a train of pulses from an energy pdf
