@@ -11,5 +11,6 @@
 *.aux
 *.gz
 *.csv
+*.pkl
 output/
 __pycache__

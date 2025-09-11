@@ -6,7 +6,7 @@
     * peak finding
     * resolution
 
-P. Franchini 7/2025
+P. Franchini 9/2025
 '''
 
 import os
@@ -25,6 +25,9 @@ exec(open("../../mod_helium3.py").read())
 
 # import QUEST-DMC code
 exec(open("../../mod_quest.py").read())
+
+import matplotlib
+matplotlib.use("Agg")  # use headless backend
 
 #===========================================================
 
@@ -76,82 +79,97 @@ def read_root(simulation,simulation_events,simulation_rate):
     return rate, energy_values, energy_probabilities
 
 
-def inject_events(rate, energy_values, energy_probabilities, total, truth_ids, description):
+def inject_events(rate, energy_values, energy_probabilities, truth_ids, description):
     '''
     Inject a train of events in a baseline
-    Arguments: rate, energy_values, energy_probabilities, total
+    Arguments: rate, energy_values, energy_probabilities, truth_ids, description
     Return: truth array
     '''
-    # random Poisson number of events within the max_time
-    N = np.random.poisson(max_time*rate) 
-    print('\n'+description)
-    print('Number of events to be generated:\t',N)
-    
-    # generate N random start times
-    starts = np.sort(np.random.randint(0,max_time,N))
-
     # Truth values, full length sample with correct sampling
-    t = np.arange(0, max_time, 1/sampling)  # [s]
+    t = np.arange(0,max_time, 1/sampling)  # [s]
     truth = np.zeros_like(t) # to store truth values
-
-    # generate a train of N events
-    print('Generate events...')
-    # Precompute static coefficients
-    exp_factor = np.power(t_b / t_w, t_w / (t_b - t_w))
-    coeff_factor = (t_b / (t_b - t_w))
-    for start in tqdm(starts):
-
-        # randomised event energy
-        energy = np.random.choice(energy_values, p=energy_probabilities)
     
-        # real increased temperature wrt the starting ttc of the config
-        #temperature=(ttc*start)*temperature_critical_superfluid(pressure).item()
+    chunk_size = 36000
+    chunks = max_time//chunk_size
 
-        if verbose:
-            print('start time [s]',start)
-            print('\tenergy [ev]',energy)
-            print('\ttemperature [K]', temperature)
+    for i in range(chunks):
+        chuck_start = i*chunk_size
+        chuck_end = chuck_start + chunk_size
+        
+        # random Poisson number of events within the max_time
+        N = np.random.poisson(chunk_size*rate) 
+        print('\n'+description)
+        print('Number of events to be generated:\t',N)
+    
+        # generate N random start times
+        starts = np.sort(np.random.randint(chuck_start,chuck_end,N))
 
-        # write truth on a dataframe
-        df_truth.loc[len(df_truth)] = [len(df_truth), start, energy, description]  # (ID, start time of the peak, energy, species)
-                    
-        # Base width from the input base temperature
-        #f_base = Width_from_Temperature(temperature,pressure,diameter)
-        
-        # Response time
-        #t_w = 1/(np.pi*f_base)
-        
-        #delta, _ = DeltaWidth_from_Energy(energy,pressure,temperature,diameter)
-        delta = energy/calibration  # faster for constant temperatures
-        
-        if verbose:
-            print('\tdelta [Hz]', delta)
+        # Truth values, full length sample with correct sampling
+        t_chunk = np.arange(chuck_start, chuck_end, 1/sampling)  # [s]
+        truth_chunk = np.zeros_like(t_chunk) # to store truth values
 
-        '''
-        # Winkelmann function: Delta f vs time (slower method)
-        with np.errstate(invalid='ignore'):
+        # generate a train of N events
+        print('Generate events...')
+        # Precompute static coefficients
+        exp_factor = np.power(t_b / t_w, t_w / (t_b - t_w))
+        coeff_factor = (t_b / (t_b - t_w))
+
+        for start in tqdm(starts):
+         
+            # randomised event energy
+            energy = np.random.choice(energy_values, p=energy_probabilities)
+        
+            # real increased temperature wrt the starting ttc of the config
+            #temperature=(ttc*start)*temperature_critical_superfluid(pressure).item()
+
+            if verbose:
+                print('start time [s]',start)
+                print('\tenergy [ev]',energy)
+                print('\ttemperature [K]', temperature)
+            
+            # write truth on a dataframe
+            df_truth.loc[len(df_truth)] = [len(df_truth), start, energy, description]  # (ID, start time of the peak, energy, species)
+        
+            # Base width from the input base temperature
+            #f_base = Width_from_Temperature(temperature,pressure,diameter)
+        
+            # Response time
+            #t_w = 1/(np.pi*f_base)
+            
+            #delta, _ = DeltaWidth_from_Energy(energy,pressure,temperature,diameter)
+            delta = energy/calibration  # faster for constant temperatures
+            
+            if verbose:
+                print('\tdelta [Hz]', delta)
+
+            '''
+            # Winkelmann function: Delta f vs time (slower method)
+            with np.errstate(invalid='ignore'):
             deltaf = np.heaviside(t-start,1)*(delta*np.power(t_b/t_w,t_w/(t_b-t_w))*(t_b/(t_b - t_w))*(np.exp(-(t-start)/t_b) - np.exp(-(t-start)/t_w)))
-        deltaf = np.nan_to_num(deltaf, nan=0.0)  # otherwise there are NaNs before the start of the pulse
-        total += deltaf
-        truth += deltaf
-        '''
+            deltaf = np.nan_to_num(deltaf, nan=0.0)  # otherwise there are NaNs before the start of the pulse
+            total += deltaf
+            truth += deltaf
+            '''
+            # Winkelmann function: Delta f vs time (fast method)
+            exp_arg1 = -(t_chunk - start) / t_b
+            exp_arg2 = -(t_chunk - start) / t_w
+            
+            # Mask only the valid (t > start) values to avoid NaNs early
+            valid_chunk = (t_chunk > start) & (t_chunk <= start + 7*t_b)  # pulse drops < 0.1%
+            valid = (t > start) & (t <= start + 7*t_b)  # pulse drops < 0.1%
+            
+            deltaf = np.zeros_like(t_chunk)
+            coeff = delta * exp_factor * coeff_factor
 
-        # Winkelmann function: Delta f vs time (fast method)
-        exp_arg1 = -(t - start) / t_b
-        exp_arg2 = -(t - start) / t_w
-        
-        # Mask only the valid (t > start) values to avoid NaNs early
-        valid = t > start
-        valid = (t > start) & (t <= start + 7*t_b)  # drops < 0.1%
-        deltaf = np.zeros_like(t)
-        
-        coeff = delta * exp_factor * coeff_factor
-        deltaf[valid] = coeff * (np.exp(exp_arg1[valid]) - np.exp(exp_arg2[valid]))
-        #print(t[valid])
-        truth_ids[valid] = len(df_truth) - 1
-        
-        total += deltaf
-        truth += deltaf
+            deltaf[valid_chunk] = coeff * (np.exp(exp_arg1[valid_chunk]) - np.exp(exp_arg2[valid_chunk]))
+            truth_ids[valid] = len(df_truth) - 1 # the index of the truth ID is the size of the truth array so far
+
+            truth_chunk += deltaf
+            
+        # Insert chunk results into the main truth array (0, max_time)
+        start_idx = int(chuck_start * sampling)
+        end_idx = start_idx + len(truth_chunk)
+        truth[start_idx:end_idx] = truth_chunk
         
     return truth
 
@@ -214,6 +232,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--config',type=str, help='Config file', default='config.py')
     parser.add_argument('--noise',type=str, help='Noise model (none|normal|shot|real)', default='normal')
+    parser.add_argument('--output',type=str, help='Output Pickle filename without extension for toy and truth values', default='output')
 
     # Read config file
     args = parser.parse_args()
@@ -250,8 +269,8 @@ if __name__ == "__main__":
         t_size_est = int(round(sampling / freq_res))
         print('Number of samples of the FFT:\t',t_size_est)
 
-        fft_rms = np.sqrt(0.5 * np.sum(amplitudes**2))
-        fft_rms = np.sqrt(0.5 * np.sum(np.sqrt(amplitudes)**2))
+        #fft_rms = np.sqrt(0.5 * np.sum(amplitudes**2))  # for amplitude
+        fft_rms = np.sqrt(0.5 * np.sum(np.sqrt(amplitudes)**2))  # for power
         print('Estimated RMS from FFT:\t', fft_rms)
 
         if plot:
@@ -266,8 +285,6 @@ if __name__ == "__main__":
     #============================================================
 
     # Output for the MC truth
-    base, ext = os.path.splitext(filename)
-    filename_truth = f"{base}_truth{ext}"
     df_truth = pd.DataFrame(columns=['id', 'start', 'energy', 'description'])  # (ID, start time of the peak, energy, species)
     
     t = np.arange(0, max_time, 1/sampling)
@@ -278,12 +295,46 @@ if __name__ == "__main__":
         
     cosmics_rate, cosmics_energy_values, cosmics_energy_probabilities = read_root(cosmics,cosmics_events,cosmics_rate)
     source_rate, source_energy_values, source_energy_probabilities = read_root(source,source_events,source_rate)
+    gammas_rate, gammas_energy_values, gammas_energy_probabilities = read_root(gammas,gammas_events,gammas_rate)
 
-    energy_values=cosmics_energy_values
-    energy_probabilities=cosmics_energy_probabilities
+    cosmics_truth = inject_events(cosmics_rate, cosmics_energy_values, cosmics_energy_probabilities, truth_ids, 'Cosmics')
+    total += cosmics_truth
+    source_truth = inject_events(source_rate, source_energy_values, source_energy_probabilities, truth_ids, 'Source')
+    total += source_truth
+    gammas_truth = inject_events(gammas_rate, gammas_energy_values, gammas_energy_probabilities, truth_ids, 'Gammas')
+    total += gammas_truth
 
-    cosmics_truth = inject_events(cosmics_rate, cosmics_energy_values, cosmics_energy_probabilities, total, truth_ids, 'Cosmics')
-    source_truth = inject_events(source_rate, source_energy_values, source_energy_probabilities, total, truth_ids, 'Source')
+    fig, axs = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
+    axs[0].hist(
+        [df_truth.energy[df_truth.description == 'Cosmics'], df_truth.energy[df_truth.description == 'Source'], df_truth.energy[df_truth.description == 'Gammas']],
+        bins=100,
+        label=['Cosmics', 'Source', 'Gammas'],
+        color=['orange','green','red'],
+        histtype='step',
+        linewidth=1.5
+    )
+    axs[0].set_xlim(0, 2e5)
+    axs[0].set_yscale('log')
+    axs[0].set_title("Simulated energies (full range)")
+    axs[0].set_xlabel('Truth Energy [eV]')
+    axs[0].legend()
+    
+    axs[1].hist(
+        [df_truth.energy[df_truth.description == 'Cosmics'], df_truth.energy[df_truth.description == 'Source'], df_truth.energy[df_truth.description == 'Gammas']],
+        bins=2000,
+        label=['Cosmics', 'Source', 'Gammas'],
+        color=['orange','green','red'],
+        histtype='step',
+        linewidth=1.5
+    )
+    axs[1].set_xlim(0, 1e4)
+    axs[1].set_yscale('log')
+    axs[1].set_title("Simulated energies (0–10 keV)")
+    axs[1].set_xlabel('Truth Energy [eV]')
+    
+    plt.tight_layout()
+    plt.savefig('energy_simulated.png')
+    plt.show()
     
     #============================================================
 
@@ -324,7 +375,6 @@ if __name__ == "__main__":
 
         # 2. interpolate amplitude values to match FFT bins
         interp_amplitudes = np.interp(target_fft_freqs, freqs, amplitudes)
-        #interp_amplitudes = amplitudes
         interp_amplitude = np.sqrt(interp_amplitudes)
         
         # 3. apply random phase to create complex FFT spectrum
@@ -335,9 +385,10 @@ if __name__ == "__main__":
         noise = np.fft.irfft(spectrum, n=n_samples)
         noise *= n_samples/2
         #noise *= t_size_est/2
-        
-        #current_rms = np.sqrt(np.mean(noise**2))
-        #noise *= (fft_rms / current_rms)  # Scale to the FFT RMS
+
+        # Scale to the FFT RMS
+        current_rms = np.sqrt(np.mean(noise**2))
+        noise *= (fft_rms / current_rms)
 
         # calculate RMS from the FFT
         power_spectrum = np.abs(spectrum)**2
@@ -395,30 +446,28 @@ if __name__ == "__main__":
     # Plotting:
     #if verbose:
     plt.figure(figsize=(15,5))
-    plt.plot(t, total, linestyle='',marker='.', color="black", label='Fake data')
-    plt.plot(t, noisy_trace, linestyle='-', color="red", alpha=0.7, label='Fake data + FFT Noise')
-    plt.plot(t, cosmics_truth, linestyle='--', color="orange", label='Cosmics truth')
-    plt.plot(t, source_truth, linestyle='--', color="green", label='Source truth')
+    plt.plot(t, total, linestyle='',marker='.', color='black', label='Fake data')
+    plt.plot(t, noisy_trace, linestyle='-', color='red', alpha=0.7, label='Fake data + FFT Noise')
+    plt.plot(t, cosmics_truth, linestyle='--', color='orange', label='Cosmics truth')
+    plt.plot(t, source_truth, linestyle='--', color='green', label='Source truth')
+    plt.plot(t, gammas_truth, linestyle='--', color='red', label='Gammas truth')
     plt.xlabel('time [s]')
     plt.yscale('linear')
     plt.ylabel('$\Delta f$ [Hz]')
     plt.legend(loc='upper right')
     plt.show()
 
-    # Create a DF with `time|width|id`
-    df_total = pd.DataFrame({'time': t,'width': total,'energy': total*calibration, 'id': truth_ids})  # (t: time, total: width variation, energy: width*calibrationg, truth_ids: truth ID)
+    # Create a DF with `time|width with noise|energy|id`
+    df_total = pd.DataFrame({'time': t,'width': noisy_trace,'energy': noisy_trace*calibration, 'id': truth_ids})  # (t: time, total: width variation, energy: width*calibrationg, truth_ids: truth ID)
     
-    # Output:
-    '''
-    print('\nWriting output to',filename,'...')
-    with open(filename, 'w') as file:
-        file.write(f"time [s],width [Hz]\n")
-        for c1, c2 in zip(t, total):
-            file.write(f"{c1:.6f},{c2:.9f}\n")
-    '''
-    df_total.to_csv(filename, index=False)
-    df_truth.to_csv(filename_truth, index=False)
+    # Output on disk:
+    df_total.to_pickle(args.output+'.pkl')        # df_total
+    df_truth.to_pickle(args.output+'_truth.pkl')  # df_truth
+    print('Output files:\t',args.output+'.pkl, '+args.output+'_truth.pkl')
 
+
+    quit()
+    
     #================================================
 
     print('\nAnalysis...')
@@ -429,10 +478,10 @@ if __name__ == "__main__":
 
     # compute RMS of noisy trace
     rms_noisy = np.sqrt(np.mean(noisy_trace**2))
-    threshold_factor = 3  # define the threshold
-    threshold = threshold_factor * rms_noisy
+    threshold_factor = 1  # define the threshold
+    threshold = threshold_factor * rms_noisy  # [Hz]
     
-    # find peaks above threshold
+    # find peaks above threshold; peaks are indexes of samples
     peaks, _ = find_peaks(noisy_trace, height=threshold, distance=10*sampling)
     print('Number of peaks: ',len(peaks))
 
@@ -452,16 +501,25 @@ if __name__ == "__main__":
     print('Energy threshold [eV]:', energy_threshold)
     print('Min energy detected [eV]:', min(noisy_trace[peaks])*calibration)
     
-    fig, axs = plt.subplots(1, 2, figsize=(12, 5))  # Adjust figsize as needed
+    fig, axs = plt.subplots(1, 3, figsize=(18, 5))
     # Width distribution
-    axs[0].hist(noisy_trace[peaks], bins=100, log=False)
+    axs[0].hist(noisy_trace[peaks], bins=100)
     axs[0].set_title('Peaks Width Distribution')
     axs[0].set_xlabel('Width [Hz]')
+    axs[0].set_yscale('log')
     # Energy distribution
-    axs[1].hist(noisy_trace[peaks] * calibration / 1e3, bins=100, log=False)
+    axs[1].hist(noisy_trace[peaks] * calibration / 1e3, bins=100)
     axs[1].set_title('Energy Distribution')
     axs[1].set_xlabel('Energy [keV]')
+    axs[1].set_yscale('log')
+    # Energy distribution - zoomed
+    axs[2].hist(noisy_trace[peaks] * calibration / 1e3, bins=2000)
+    axs[2].set_title('Energy Distribution - zoomed')
+    axs[2].set_xlabel('Energy [keV]')
+    axs[2].set_xlim(0, 10)
+    axs[2].set_yscale('log')
     plt.tight_layout()
+    plt.savefig('energy_reconstructed.png')
     plt.show()
 
 

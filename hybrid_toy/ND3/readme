@@ -1,0 +1,7 @@
+
+Code:
+toy.py: produces the toy simulation
+analysis.py: analysis of the output of the hybrid toys
+
+Condor submission in the Oxford cluster:
+condor_submit job.submit

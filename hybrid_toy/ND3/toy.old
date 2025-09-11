@@ -82,91 +82,73 @@ def inject_events(rate, energy_values, energy_probabilities, truth_ids, descript
     Arguments: rate, energy_values, energy_probabilities, truth_ids, description
     Return: truth array
     '''
+    # random Poisson number of events within the max_time
+    N = np.random.poisson(max_time*rate) 
+    print('\n'+description)
+    print('Number of events to be generated:\t',N)
+    
+    # generate N random start times
+    starts = np.sort(np.random.randint(0,max_time,N))
+
     # Truth values, full length sample with correct sampling
-    t = np.arange(0,max_time, 1/sampling)  # [s]
+    t = np.arange(0, max_time, 1/sampling)  # [s]
     truth = np.zeros_like(t) # to store truth values
-    
-    chunk_size = 36000
-    chunks = max_time//chunk_size
 
-    for i in range(chunks):
-        chuck_start = i*chunk_size
-        chuck_end = chuck_start + chunk_size
-        
-        # random Poisson number of events within the max_time
-        N = np.random.poisson(chunk_size*rate) 
-        print('\n'+description)
-        print('Number of events to be generated:\t',N)
-    
-        # generate N random start times
-        starts = np.sort(np.random.randint(chuck_start,chuck_end,N))
+    # generate a train of N events
+    print('Generate events...')
+    # Precompute static coefficients
+    exp_factor = np.power(t_b / t_w, t_w / (t_b - t_w))
+    coeff_factor = (t_b / (t_b - t_w))
 
-        # Truth values, full length sample with correct sampling
-        t_chunk = np.arange(chuck_start, chuck_end, 1/sampling)  # [s]
-        truth_chunk = np.zeros_like(t_chunk) # to store truth values
-
-        # generate a train of N events
-        print('Generate events...')
-        # Precompute static coefficients
-        exp_factor = np.power(t_b / t_w, t_w / (t_b - t_w))
-        coeff_factor = (t_b / (t_b - t_w))
-
-        for start in tqdm(starts):
+    for start in tqdm(starts):
          
-            # randomised event energy
-            energy = np.random.choice(energy_values, p=energy_probabilities)
+        # randomised event energy
+        energy = np.random.choice(energy_values, p=energy_probabilities)
         
-            # real increased temperature wrt the starting ttc of the config
-            #temperature=(ttc*start)*temperature_critical_superfluid(pressure).item()
+        # real increased temperature wrt the starting ttc of the config
+        #temperature=(ttc*start)*temperature_critical_superfluid(pressure).item()
 
-            if verbose:
-                print('start time [s]',start)
-                print('\tenergy [ev]',energy)
-                print('\ttemperature [K]', temperature)
+        if verbose:
+            print('start time [s]',start)
+            print('\tenergy [ev]',energy)
+            print('\ttemperature [K]', temperature)
             
-            # write truth on a dataframe
-            df_truth.loc[len(df_truth)] = [len(df_truth), start, energy, description]  # (ID, start time of the peak, energy, species)
+        # write truth on a dataframe
+        df_truth.loc[len(df_truth)] = [len(df_truth), start, energy, description]  # (ID, start time of the peak, energy, species)
         
-            # Base width from the input base temperature
-            #f_base = Width_from_Temperature(temperature,pressure,diameter)
+        # Base width from the input base temperature
+        #f_base = Width_from_Temperature(temperature,pressure,diameter)
         
-            # Response time
-            #t_w = 1/(np.pi*f_base)
-            
-            #delta, _ = DeltaWidth_from_Energy(energy,pressure,temperature,diameter)
-            delta = energy/calibration  # faster for constant temperatures
-            
-            if verbose:
-                print('\tdelta [Hz]', delta)
+        # Response time
+        #t_w = 1/(np.pi*f_base)
+        
+        #delta, _ = DeltaWidth_from_Energy(energy,pressure,temperature,diameter)
+        delta = energy/calibration  # faster for constant temperatures
+        
+        if verbose:
+            print('\tdelta [Hz]', delta)
 
-            '''
-            # Winkelmann function: Delta f vs time (slower method)
-            with np.errstate(invalid='ignore'):
-            deltaf = np.heaviside(t-start,1)*(delta*np.power(t_b/t_w,t_w/(t_b-t_w))*(t_b/(t_b - t_w))*(np.exp(-(t-start)/t_b) - np.exp(-(t-start)/t_w)))
-            deltaf = np.nan_to_num(deltaf, nan=0.0)  # otherwise there are NaNs before the start of the pulse
-            total += deltaf
-            truth += deltaf
-            '''
-            # Winkelmann function: Delta f vs time (fast method)
-            exp_arg1 = -(t_chunk - start) / t_b
-            exp_arg2 = -(t_chunk - start) / t_w
-            
-            # Mask only the valid (t > start) values to avoid NaNs early
-            valid_chunk = (t_chunk > start) & (t_chunk <= start + 7*t_b)  # pulse drops < 0.1%
-            valid = (t > start) & (t <= start + 7*t_b)  # pulse drops < 0.1%
-            
-            deltaf = np.zeros_like(t_chunk)
-            coeff = delta * exp_factor * coeff_factor
+        '''
+        # Winkelmann function: Delta f vs time (slower method)
+        with np.errstate(invalid='ignore'):
+        deltaf = np.heaviside(t-start,1)*(delta*np.power(t_b/t_w,t_w/(t_b-t_w))*(t_b/(t_b - t_w))*(np.exp(-(t-start)/t_b) - np.exp(-(t-start)/t_w)))
+        deltaf = np.nan_to_num(deltaf, nan=0.0)  # otherwise there are NaNs before the start of the pulse
+        total += deltaf
+        truth += deltaf
+        '''
+        # Winkelmann function: Delta f vs time (fast method)
+        exp_arg1 = -(t - start) / t_b
+        exp_arg2 = -(t - start) / t_w
 
-            deltaf[valid_chunk] = coeff * (np.exp(exp_arg1[valid_chunk]) - np.exp(exp_arg2[valid_chunk]))
-            truth_ids[valid] = len(df_truth) - 1 # the index of the truth ID is the size of the truth array so far
-
-            truth_chunk += deltaf
-            
-        # Insert chunk results into the main truth array (0, max_time)
-        start_idx = int(chuck_start * sampling)
-        end_idx = start_idx + len(truth_chunk)
-        truth[start_idx:end_idx] = truth_chunk
+        # Mask only the valid (t > start) values to avoid NaNs early
+        valid = (t > start) & (t <= start + 7*t_b)  # pulse drops < 0.1%
+        deltaf = np.zeros_like(t)
+        
+        coeff = delta * exp_factor * coeff_factor
+        deltaf[valid] = coeff * (np.exp(exp_arg1[valid]) - np.exp(exp_arg2[valid]))
+        truth_ids[valid] = len(df_truth) - 1
+        
+        truth += deltaf
         
     return truth
 
@@ -433,7 +415,7 @@ if __name__ == "__main__":
     plt.legend(loc='upper right')
     plt.show()
 
-    # Create a DF with `time|width|energy|id`
+    # Create a DF with `time|width|id`
     df_total = pd.DataFrame({'time': t,'width': total,'energy': total*calibration, 'id': truth_ids})  # (t: time, total: width variation, energy: width*calibrationg, truth_ids: truth ID)
     
     # Output:

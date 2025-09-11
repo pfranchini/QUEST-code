@@ -1,0 +1,31 @@
+#
+# Run as: condor_submit job.submit
+#
+
+basedir    = /data/questdmc/users/franchinip/QUEST/ND3/toy
+
+Universe   = vanilla
+
+Requirements = (OpSysName == "AlmaLinux")
+
+Executable = /usr/bin/python
+Arguments  = $(basedir)/toy.py --noise real --output $(basedir)/output_$(ProcId)
+
+jobdir  = $(basedir)
+
+input   = /dev/null
+
+include command : mkdir -p $(jobdir)
+
+# direct logging and screen out
+output = $(jobdir)/job-$(ProcId).out
+error  = $(jobdir)/job-$(ProcId).err
+log    = $(jobdir)/job-$(ProcId).log
+
+# resources
+request_cpus = 1
+request_disk = 500MB
+request_memory = 1000MB
+
+# number of identical jobs
+Queue 100
