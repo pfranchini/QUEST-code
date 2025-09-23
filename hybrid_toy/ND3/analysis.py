@@ -1,4 +1,5 @@
 '''
+ - Can read multiple output files of the toy code
  - Simple analysis of the train of pulses:
     * peak finding
     * truth vs reconstruction
@@ -53,18 +54,64 @@ if __name__ == "__main__":
     files = glob.glob(args.input+'*.pkl')
     print('\nLoading '+str(len(files))+' files...')
     files = [f for f in files if "truth" not in f]
-    dfs = [pd.read_pickle(f) for f in files]
+    #dfs = [pd.read_pickle(f) for f in files]
+    #df_total = pd.concat(dfs, ignore_index=True
+    dfs = []
+    for file_idx, f in enumerate(files, start=1):
+        df = pd.read_pickle(f)
+        df["id"] = df["id"] + file_idx * 1_000_000  # shift IDs by a large offset per file
+        dfs.append(df)
     df_total = pd.concat(dfs, ignore_index=True)
 
     files = glob.glob(args.input+'*_truth.pkl')
-    dfs = [pd.read_pickle(f) for f in files]
+    #dfs = [pd.read_pickle(f) for f in files]
+    #df_truth = pd.concat(dfs, ignore_index=True)
+    dfs = []
+    for file_idx, f in enumerate(files, start=1):
+        df = pd.read_pickle(f)
+        df["id"] = df["id"] + file_idx * 1_000_000  # shift IDs by a large offset per file
+        dfs.append(df)
     df_truth = pd.concat(dfs, ignore_index=True)
     noisy_trace = df_total.width.to_numpy()
+    print('Total number of injected events:',len(df_truth))
+    
+    # plots the simulated energies present in the files
+    fig, axs = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
+    axs[0].hist(
+        [df_truth.energy[df_truth.description == 'Cosmics'], df_truth.energy[df_truth.description == 'Source'], df_truth.energy[df_truth.description == 'Gammas']],
+        bins=100,
+        label=['Cosmics', 'Source', 'Gammas'],
+        color=['orange','green','red'],
+        histtype='step',
+        linewidth=1.5
+    )
+    axs[0].set_xlim(0, 2e5)
+    axs[0].set_yscale('log')
+    axs[0].set_title("Simulated energies (full range)")
+    axs[0].set_xlabel('Truth Energy [eV]')
+    axs[0].legend()
 
+    axs[1].hist(
+        [df_truth.energy[df_truth.description == 'Cosmics'], df_truth.energy[df_truth.description == 'Source'], df_truth.energy[df_truth.description == 'Gammas']],
+        bins=2000,
+        label=['Cosmics', 'Source', 'Gammas'],
+        color=['orange','green','red'],
+        histtype='step',
+        linewidth=1.5
+    )
+    axs[1].set_xlim(0, 1e4)
+    axs[1].set_yscale('log')
+    axs[1].set_title("Simulated energies (0–10 keV)")
+    axs[1].set_xlabel('Truth Energy [eV]')
+
+    plt.tight_layout()
+    plt.savefig('energy_simulated.png')
+    plt.show()
+    
     print('\nPeak finding...')
     # compute RMS of noisy trace
     rms_noisy = np.sqrt(np.mean(noisy_trace**2))
-    threshold_factor = 1  # define the threshold
+    threshold_factor = 0  # define the threshold
     threshold = threshold_factor * rms_noisy  # [Hz]
     
     # find peaks above threshold; peaks are indexes of samples
@@ -87,7 +134,8 @@ if __name__ == "__main__":
     energy_threshold = threshold*calibration
     print('Energy threshold [eV]:', energy_threshold)
     print('Min energy detected [eV]:', min(noisy_trace[peaks])*calibration)
-    
+
+    '''
     fig, axs = plt.subplots(1, 3, figsize=(18, 5))
     # Width distribution
     axs[0].hist(noisy_trace[peaks], bins=100)
@@ -108,8 +156,58 @@ if __name__ == "__main__":
     plt.tight_layout()
     plt.savefig('energy_reconstructed.png')
     plt.show()
+    '''
 
+    # Plots for True-Positive (TP) and False-Positive (FP)
+    df_TP = df_total[df_total["id"] > -1]
+    peaks_TP = [p for p in peaks if p in df_TP.index]
+    print('Number of TP:', len(peaks_TP))
+    
+    df_FP = df_total[df_total["id"] == -1]
+    peaks_FP = [p for p in peaks if p in df_FP.index]
+    print('Number of FP:', len(peaks_FP))
 
+    print('Number of false negatives:', len(df_truth) - len(peaks_TP))
+    
+    fig, axs = plt.subplots(1, 3, figsize=(18, 5))
+
+    # Width distribution
+    axs[0].hist([df_TP.loc[peaks_TP, "width"], df_FP.loc[peaks_FP, "width"], df_truth.energy/calibration],
+                bins=100,
+                label=['TP', 'FP', 'truth'],
+                color=['green','red','black'],
+                histtype='step')
+    axs[0].set_title("Peaks Width Distribution")
+    axs[0].set_xlabel("Width [Hz]")
+    axs[0].set_yscale("log")
+
+    # Energy distribution
+    axs[1].hist([df_TP.loc[peaks_TP, "energy"]/1e3, df_FP.loc[peaks_FP, "energy"]/1e3, df_truth.energy/1e3],
+                bins=100,
+                label=['TP', 'FP', 'truth'],
+                color=['green','red','black'],
+                histtype='step')
+    axs[1].set_title("Energy Distribution")
+    axs[1].set_xlabel("Energy [keV]")
+    axs[1].set_yscale("log")
+    
+    # Energy distribution - zoomed
+    axs[2].hist([df_TP.loc[peaks_TP, "energy"]/1e3, df_FP.loc[peaks_FP, "energy"]/1e3, df_truth.energy/1e3],
+                bins=2000,
+                label=['TP', 'FP', 'truth'],
+                color=['green','red','black'],
+                histtype='step')
+    axs[2].set_title("Energy Distribution - zoomed")
+    axs[2].set_xlabel("Energy [keV]")
+    axs[2].set_xlim(0, 10)
+    axs[2].set_yscale("log")
+
+    plt.legend(loc='upper right')    
+    plt.tight_layout()
+    plt.savefig('energy_reconstructed.png')
+    plt.show()
+
+    
     # Reco vs Truth
     # loop through each peak and gather reco and truth energy
     print ('\nReco vs Truth...')
@@ -130,7 +228,6 @@ if __name__ == "__main__":
     df_reco_vs_truth = pd.DataFrame(records)
     print(df_reco_vs_truth)
     print('Number of false positives:', false_positive)
-    print('Number of false negatives:', len(df_truth) - len(peaks) - false_positive)
     
     plt.figure(figsize=(8,6))
     plt.scatter(df_reco_vs_truth['truth_energy'], df_reco_vs_truth['reco_energy'], alpha=0.7)

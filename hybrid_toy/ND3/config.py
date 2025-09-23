@@ -31,7 +31,7 @@ gammas_rate=178695 # [ev]s], activity*surface of the ambient generator
 # noise
 fft_file='Run23_8mA_01V_noisepwr_quietregions.csv'
 
-max_time = 3600*10   # [second], total lenght of the sample
+max_time = 3600*100   # [second], total lenght of the sample
 #max_time = 930   # [second], total lenght of the sample
 sampling = 100    # [Hz], sampling (points per second)
 

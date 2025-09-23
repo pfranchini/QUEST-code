@@ -2,9 +2,6 @@
  - QUEST-DMC WP1 full toy simulation of a train of pulses, for ND3, given
     * a noise FFT    
     * energy PDFs
- - Simple analysis of the train of pulses:
-    * peak finding
-    * resolution
 
 P. Franchini 9/2025
 '''
@@ -26,8 +23,8 @@ exec(open("../../mod_helium3.py").read())
 # import QUEST-DMC code
 exec(open("../../mod_quest.py").read())
 
-import matplotlib
-matplotlib.use("Agg")  # use headless backend
+#import matplotlib
+#matplotlib.use("Agg")  # use headless backend
 
 #===========================================================
 
@@ -356,6 +353,9 @@ if __name__ == "__main__":
 
     # Add noise:
     print('\nAdding noise...')
+    if args.noise=='none':
+        noise = 0
+        noisy_trace = total
     if args.noise=='normal':
         for i in tqdm(range(len(total))):
             total[i] = np.random.normal(total[i], total[i]/10000)  # FIX ME
@@ -363,7 +363,7 @@ if __name__ == "__main__":
         for i in tqdm(range(len(total))):
             total[i] = np.random.normal(total[i], shot_noise(total[i],f_base[i],pressure,temperature[i]))
     if args.noise=='real':
-
+        
         n_samples = int(max_time*sampling)
         
         # 1. compute the frequency bins needed for np.fft.irfft
@@ -440,8 +440,6 @@ if __name__ == "__main__":
         plt.legend()
         plt.show()        
 
-        #quit()
-        
     
     # Plotting:
     #if verbose:
@@ -467,7 +465,8 @@ if __name__ == "__main__":
 
 
     quit()
-    
+
+    '''
     #================================================
 
     print('\nAnalysis...')
@@ -556,3 +555,4 @@ if __name__ == "__main__":
     plt.legend(loc='upper right')
     plt.tight_layout()
     plt.show()
+    '''
