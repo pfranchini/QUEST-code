@@ -52,24 +52,22 @@ if __name__ == "__main__":
     # read Pickle output from toy simulation
     import glob
     files = glob.glob(args.input+'*.pkl')
-    print('\nLoading '+str(len(files))+' files...')
+    print('\nLoading '+str(len(files))+' pair of files...')
     files = [f for f in files if "truth" not in f]
-    #dfs = [pd.read_pickle(f) for f in files]
-    #df_total = pd.concat(dfs, ignore_index=True
     dfs = []
-    for file_idx, f in enumerate(files, start=1):
+    #for file_idx, f in enumerate(files, start=1):
+    for file_idx, f in enumerate(tqdm(files, desc="  toy files"), start=1):
         df = pd.read_pickle(f)
-        df["id"] = df["id"] + file_idx * 1_000_000  # shift IDs by a large offset per file
+        df["id"] = df["id"].where(df["id"] == -1, df["id"] + file_idx * 1_000_000)  # shift IDs by a large offset per file, unless is '-1'
         dfs.append(df)
     df_total = pd.concat(dfs, ignore_index=True)
 
     files = glob.glob(args.input+'*_truth.pkl')
-    #dfs = [pd.read_pickle(f) for f in files]
-    #df_truth = pd.concat(dfs, ignore_index=True)
     dfs = []
-    for file_idx, f in enumerate(files, start=1):
+    #for file_idx, f in enumerate(files, start=1):
+    for file_idx, f in enumerate(tqdm(files, desc="  truth files"), start=1):
         df = pd.read_pickle(f)
-        df["id"] = df["id"] + file_idx * 1_000_000  # shift IDs by a large offset per file
+        df["id"] = df["id"].where(df["id"] == -1, df["id"] + file_idx * 1_000_000)  # shift IDs by a large offset per file, unless is '-1'
         dfs.append(df)
     df_truth = pd.concat(dfs, ignore_index=True)
     noisy_trace = df_total.width.to_numpy()
@@ -111,7 +109,7 @@ if __name__ == "__main__":
     print('\nPeak finding...')
     # compute RMS of noisy trace
     rms_noisy = np.sqrt(np.mean(noisy_trace**2))
-    threshold_factor = 0  # define the threshold
+    threshold_factor = 1  # define the threshold
     threshold = threshold_factor * rms_noisy  # [Hz]
     
     # find peaks above threshold; peaks are indexes of samples
@@ -158,7 +156,7 @@ if __name__ == "__main__":
     plt.show()
     '''
 
-    # Plots for True-Positive (TP) and False-Positive (FP)
+    # Plots for True-Positive (TP) and False-Positive (FP) peaks
     df_TP = df_total[df_total["id"] > -1]
     peaks_TP = [p for p in peaks if p in df_TP.index]
     print('Number of TP:', len(peaks_TP))
