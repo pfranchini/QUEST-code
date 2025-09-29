@@ -3,6 +3,10 @@
     * a noise FFT    
     * energy PDFs
 
+ - Output:
+    Toy simulation Pickle files: df:sample|width with noise|true width|id; calibration
+    Truth Pickle files: ID|start time of the peak|energy|specie
+
 P. Franchini 9/2025
 '''
 
@@ -294,12 +298,15 @@ if __name__ == "__main__":
     source_rate, source_energy_values, source_energy_probabilities = read_root(source,source_events,source_rate)
     gammas_rate, gammas_energy_values, gammas_energy_probabilities = read_root(gammas,gammas_events,gammas_rate)
 
-    cosmics_truth = inject_events(cosmics_rate, cosmics_energy_values, cosmics_energy_probabilities, truth_ids, 'Cosmics')
-    total += cosmics_truth
-    source_truth = inject_events(source_rate, source_energy_values, source_energy_probabilities, truth_ids, 'Source')
-    total += source_truth
-    gammas_truth = inject_events(gammas_rate, gammas_energy_values, gammas_energy_probabilities, truth_ids, 'Gammas')
-    total += gammas_truth
+    if cosmics_rate>0:
+        cosmics_truth = inject_events(cosmics_rate, cosmics_energy_values, cosmics_energy_probabilities, truth_ids, 'Cosmics')
+        total += cosmics_truth
+    if source_rate>0:
+        source_truth = inject_events(source_rate, source_energy_values, source_energy_probabilities, truth_ids, 'Source')
+        total += source_truth
+    if gammas_rate>0:
+        gammas_truth = inject_events(gammas_rate, gammas_energy_values, gammas_energy_probabilities, truth_ids, 'Gammas')
+        total += gammas_truth
 
     fig, axs = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
     axs[0].hist(
@@ -446,113 +453,30 @@ if __name__ == "__main__":
     plt.figure(figsize=(15,5))
     plt.plot(t, total, linestyle='',marker='.', color='black', label='Fake data')
     plt.plot(t, noisy_trace, linestyle='-', color='red', alpha=0.7, label='Fake data + FFT Noise')
-    plt.plot(t, cosmics_truth, linestyle='--', color='orange', label='Cosmics truth')
-    plt.plot(t, source_truth, linestyle='--', color='green', label='Source truth')
-    plt.plot(t, gammas_truth, linestyle='--', color='red', label='Gammas truth')
+    if cosmics_rate>0:
+        plt.plot(t, cosmics_truth, linestyle='--', color='orange', label='Cosmics truth')
+    if source_rate>0:
+        plt.plot(t, source_truth, linestyle='--', color='green', label='Source truth')
+    if gammas_rate>0:
+        plt.plot(t, gammas_truth, linestyle='--', color='red', label='Gammas truth')
     plt.xlabel('time [s]')
     plt.yscale('linear')
     plt.ylabel('$\Delta f$ [Hz]')
     plt.legend(loc='upper right')
     plt.show()
 
-    # Create a DF with `time|width with noise|energy|id`
-    df_total = pd.DataFrame({'time': t,'width': noisy_trace,'energy': noisy_trace*calibration, 'id': truth_ids})  # (t: time, total: width variation, energy: width*calibrationg, truth_ids: truth ID)
+    # Create a DF with `time|width with noise|energy with noise|id`
+    #df_total = pd.DataFrame({'time': t,'width': noisy_trace,'energy': np.round(noisy_trace*calibration,1), 'id': truth_ids})  # (t: time, total: width variation, energy: width*calibration, truth_ids: truth ID)
+    # Create a DF with `time|width with noise|true width|id`
+    df_total = pd.DataFrame({'time': t,'width': noisy_trace,'true_width': total, 'id': truth_ids})  # (t: time, width variation with noise, true width, truth_ids: truth ID)
     
     # Output on disk:
-    df_total.to_pickle(args.output+'.pkl')        # df_total
-    df_truth.to_pickle(args.output+'_truth.pkl')  # df_truth
-    print('Output files:\t',args.output+'.pkl, '+args.output+'_truth.pkl')
+    #df_total.to_pickle(args.output+'.pkl')        # df_total
+    import pickle
+    with open(args.output + ".pkl", "wb") as f:
+        pickle.dump({"df_total": df_total, "calibration": calibration, "df_truth": df_truth}, f)
+    #df_truth.to_pickle(args.output+'_truth.pkl')  # df_truth
+    #print('Output files:\t',args.output+'.pkl, '+args.output+'_truth.pkl')
+    print('Output file:\t',args.output+'.pkl')
 
-
-    quit()
-
-    '''
-    #================================================
-
-    print('\nAnalysis...')
-
-    import numpy as np
-    from scipy.signal import find_peaks
-    import matplotlib.pyplot as plt
-
-    # compute RMS of noisy trace
-    rms_noisy = np.sqrt(np.mean(noisy_trace**2))
-    threshold_factor = 1  # define the threshold
-    threshold = threshold_factor * rms_noisy  # [Hz]
-    
-    # find peaks above threshold; peaks are indexes of samples
-    peaks, _ = find_peaks(noisy_trace, height=threshold, distance=10*sampling)
-    print('Number of peaks: ',len(peaks))
-
-    plt.figure(figsize=(10, 4))
-    plt.plot(total, linestyle='',marker='.', color="black", label='Fake data')
-    plt.plot(noisy_trace, label="Fake data + FFT Noise")
-    plt.plot(peaks, noisy_trace[peaks], "rx", label=f"Peaks > {threshold_factor}RMS: {len(peaks)}")
-    plt.axhline(threshold, color='gray', linestyle='--', label="threshold")
-    plt.legend(loc='upper right')
-    plt.title("Peak Detection Above RMS Threshold")
-    plt.xlabel("Sample")
-    plt.ylabel("Width [Hz]")
-    plt.savefig('peaks.png')
-    plt.show()
-    
-    energy_threshold = threshold*calibration
-    print('Energy threshold [eV]:', energy_threshold)
-    print('Min energy detected [eV]:', min(noisy_trace[peaks])*calibration)
-    
-    fig, axs = plt.subplots(1, 3, figsize=(18, 5))
-    # Width distribution
-    axs[0].hist(noisy_trace[peaks], bins=100)
-    axs[0].set_title('Peaks Width Distribution')
-    axs[0].set_xlabel('Width [Hz]')
-    axs[0].set_yscale('log')
-    # Energy distribution
-    axs[1].hist(noisy_trace[peaks] * calibration / 1e3, bins=100)
-    axs[1].set_title('Energy Distribution')
-    axs[1].set_xlabel('Energy [keV]')
-    axs[1].set_yscale('log')
-    # Energy distribution - zoomed
-    axs[2].hist(noisy_trace[peaks] * calibration / 1e3, bins=2000)
-    axs[2].set_title('Energy Distribution - zoomed')
-    axs[2].set_xlabel('Energy [keV]')
-    axs[2].set_xlim(0, 10)
-    axs[2].set_yscale('log')
-    plt.tight_layout()
-    plt.savefig('energy_reconstructed.png')
-    plt.show()
-
-
-    # Reco vs Truth
-    # loop through each peak and gather reco and truth energy
-    records = []
-    false_positive = 0
-    
-    for peak in peaks:
-        reco_energy = noisy_trace[peak] * calibration
-        id_ = df_total.loc[peak, 'id']  # Possible Truth ID on a given peak
-        if id_ == -1:
-            # it found a fake peak
-            false_positive += 1
-        truth_row = df_truth[df_truth['id'] == id_]
-        if not truth_row.empty:
-            truth_energy = truth_row.iloc[0]['energy']
-            records.append({'peak': peak, 'id': id_, 'reco_energy': reco_energy, 'truth_energy': truth_energy})
-
-    df_reco_vs_truth = pd.DataFrame(records)
-    print(df_reco_vs_truth)
-    print('Number of false positives:', false_positive)
-    print('Number of false negatives:', len(df_truth) - len(peaks) - false_positive)
-    
-    plt.figure(figsize=(8,6))
-    plt.scatter(df_reco_vs_truth['truth_energy'], df_reco_vs_truth['reco_energy'], alpha=0.7)
-    plt.plot([df_reco_vs_truth['truth_energy'].min(), df_reco_vs_truth['truth_energy'].max()],
-             [df_reco_vs_truth['truth_energy'].min(), df_reco_vs_truth['truth_energy'].max()], 'r--')
-    plt.axvline(x=energy_threshold, color='blue', linestyle='--', linewidth=1.5, label=f'Threshold = {energy_threshold:.1f} eV')
-    plt.xlabel("Truth Energy [ev]")
-    plt.ylabel("Reconstructed Energy [ev]")
-    plt.title("Energy: Reconstructed vs Truth")
-    plt.grid(True)
-    plt.legend(loc='upper right')
-    plt.tight_layout()
-    plt.show()
-    '''
+    print('\n==== End ====\n')

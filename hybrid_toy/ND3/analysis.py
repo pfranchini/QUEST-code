@@ -47,31 +47,41 @@ if __name__ == "__main__":
     print('Config file:\t',args.config)
     print('Input files:\t',args.input+'*.pkl')
 
-    # TO BE FIXED THE ID OF THE TRUTH THAT IS NOT UNIQUE ACROSS DIFFERENT FILES !!!!
-    
+    # !!!! FIX THE `time` BECAUSE IS WRONG: NEED TO BE SCALED TO APPEND THE SAMPLES - time is never used in the code, only samples
     # read Pickle output from toy simulation
     import glob
     files = glob.glob(args.input+'*.pkl')
-    print('\nLoading '+str(len(files))+' pair of files...')
+    print('\nLoading '+str(len(files))+' file(s)...')
     files = [f for f in files if "truth" not in f]
-    dfs = []
-    #for file_idx, f in enumerate(files, start=1):
+    dfs1 = []
+    dfs2 = []
     for file_idx, f in enumerate(tqdm(files, desc="  toy files"), start=1):
-        df = pd.read_pickle(f)
-        df["id"] = df["id"].where(df["id"] == -1, df["id"] + file_idx * 1_000_000)  # shift IDs by a large offset per file, unless is '-1'
-        dfs.append(df)
-    df_total = pd.concat(dfs, ignore_index=True)
+        obj = pd.read_pickle(f)
+        df1 = obj["df_total"]
+        df2 = obj["df_truth"]
+        calibration = obj["calibration"]
+        df1["id"] = df1["id"].where(df1["id"] == -1, df1["id"] + file_idx * 1_000_000)  # shift IDs by a large offset per file, unless is '-1'
+        df2["id"] = df2["id"].where(df2["id"] == -1, df2["id"] + file_idx * 1_000_000)  # shift IDs by a large offset per file, unless is '-1'
+        dfs1.append(df1)
+        dfs2.append(df2)
+    df_total = pd.concat(dfs1, ignore_index=True)
+    df_truth = pd.concat(dfs2, ignore_index=True)
 
+    '''
     files = glob.glob(args.input+'*_truth.pkl')
     dfs = []
-    #for file_idx, f in enumerate(files, start=1):
     for file_idx, f in enumerate(tqdm(files, desc="  truth files"), start=1):
         df = pd.read_pickle(f)
         df["id"] = df["id"].where(df["id"] == -1, df["id"] + file_idx * 1_000_000)  # shift IDs by a large offset per file, unless is '-1'
         dfs.append(df)
     df_truth = pd.concat(dfs, ignore_index=True)
-    noisy_trace = df_total.width.to_numpy()
+    '''
+    noisy_trace = df_total.width.to_numpy()  # width with noise
     print('Total number of injected events:',len(df_truth))
+
+    # add to the df_truth DF the noisy energy
+    df_total["energy"] = np.round(df_total["width"]*calibration, 1)
+    total = df_total.true_width.to_numpy()  # width without noise
     
     # plots the simulated energies present in the files
     fig, axs = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
@@ -117,7 +127,7 @@ if __name__ == "__main__":
     print('Number of peaks: ',len(peaks))
 
     plt.figure(figsize=(10, 4))
-    #plt.plot(total, linestyle='',marker='.', color="black", label='Fake data')
+    plt.plot(total, linestyle='',marker='.', color="black", label='Fake data')
     plt.plot(noisy_trace, label="Fake data + FFT Noise")
     plt.plot(peaks, noisy_trace[peaks], "rx", label=f"Peaks > {threshold_factor}RMS: {len(peaks)}")
     plt.axhline(threshold, color='gray', linestyle='--', label="threshold")
@@ -128,7 +138,6 @@ if __name__ == "__main__":
     plt.savefig('peaks.png')
     plt.show()
 
-    calibration = DeltaWidth_from_Energy(1000, pressure, temperature, diameter)[1]
     energy_threshold = threshold*calibration
     print('Energy threshold [eV]:', energy_threshold)
     print('Min energy detected [eV]:', min(noisy_trace[peaks])*calibration)
