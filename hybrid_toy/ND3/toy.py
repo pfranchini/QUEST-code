@@ -1,13 +1,14 @@
 '''
  - QUEST-DMC WP1 full toy simulation of a train of pulses, for ND3, given
     * a noise FFT    
-    * energy PDFs
+    * energy PDFs from g4quest
 
  - Output:
-    Toy simulation Pickle files: df:sample|width with noise|true width|id; calibration
-    Truth Pickle files: ID|start time of the peak|energy|specie
+    Toy simulation Pickle file:
+        df:sample|width with noise|true width|ID; calibration
+        ID|start time of the peak|energy|specie
 
-P. Franchini 9/2025
+P. Franchini 10/2025
 '''
 
 import os
@@ -50,6 +51,7 @@ def read_root(simulation,simulation_events,simulation_rate):
     simulation_weight_per_event = (simulation_rate / simulation_events) * time / bin_width
     simulation_weights = np.full_like(pdf_energy, simulation_weight_per_event)    
 
+    '''
     if plot:
         plt.hist(pdf_energy,  bins=bins, weights=simulation_weights, alpha=0.5, histtype="step",  linewidth=2, label='Simulation', color='orange') # [keV]
         plt.title('Background simulation')
@@ -60,11 +62,13 @@ def read_root(simulation,simulation_events,simulation_rate):
         plt.grid(True)
         plt.tight_layout()
         plt.show()
-
+    '''
+    
     hist, bin_edges = np.histogram(pdf_energy, bins=bins, weights=simulation_weights, density=True)
     energy_values = 0.5 * (bin_edges[1:] + bin_edges[:-1]) * 1e3 # [eV]
     energy_probabilities = hist / np.sum(hist)
 
+    '''
     if plot:
         # Plot energy values against weights
         plt.plot(energy_values, energy_probabilities, marker='o', linestyle='-', color='b') # [eV]
@@ -74,7 +78,8 @@ def read_root(simulation,simulation_events,simulation_rate):
         plt.title('Energy PDF')
         plt.grid(True)
         plt.show()
-
+    '''
+    
     rate = len(pdf_energy)*simulation_rate/simulation_events
         
     return rate, energy_values, energy_probabilities
@@ -465,18 +470,13 @@ if __name__ == "__main__":
     plt.legend(loc='upper right')
     plt.show()
 
-    # Create a DF with `time|width with noise|energy with noise|id`
-    #df_total = pd.DataFrame({'time': t,'width': noisy_trace,'energy': np.round(noisy_trace*calibration,1), 'id': truth_ids})  # (t: time, total: width variation, energy: width*calibration, truth_ids: truth ID)
     # Create a DF with `time|width with noise|true width|id`
     df_total = pd.DataFrame({'time': t,'width': noisy_trace,'true_width': total, 'id': truth_ids})  # (t: time, width variation with noise, true width, truth_ids: truth ID)
     
-    # Output on disk:
-    #df_total.to_pickle(args.output+'.pkl')        # df_total
+    # Output on disk: df_total + calibration + df_truth
     import pickle
     with open(args.output + ".pkl", "wb") as f:
         pickle.dump({"df_total": df_total, "calibration": calibration, "df_truth": df_truth}, f)
-    #df_truth.to_pickle(args.output+'_truth.pkl')  # df_truth
-    #print('Output files:\t',args.output+'.pkl, '+args.output+'_truth.pkl')
     print('Output file:\t',args.output+'.pkl')
 
     print('\n==== End ====\n')
