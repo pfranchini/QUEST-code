@@ -1,12 +1,9 @@
 '''
  - Can read multiple output files of the toy code
- - Simple analysis of the train of pulses:
-    * peak finding
-    * fit of the peaks
-    * truth vs reconstruction
+ - Fit with multiple PDFs both the Truth and the Reco
 
 Usage example:
-    python -i analysis.py --input /data/questdmc/users/franchinip/QUEST/ND3/toy/output --config config.py
+    python -ifit.py --input /data/questdmc/users/franchinip/QUEST/ND3/toy/output
 
 ---
 P. Franchini 10/2025
@@ -24,6 +21,8 @@ from scipy import interpolate
 import scipy.signal as scs
 from scipy.signal import find_peaks
 
+from functions import plot_corr_matrix
+
 # import Tsepelin code
 exec(open("../../mod_helium3.py").read())
 
@@ -32,10 +31,45 @@ exec(open("../../mod_quest.py").read())
 
 #===========================================================
 
+def fit(energies,pdf1,pdf2):
+    
+    # --- Define mixture model ---
+    def mixture_log_likelihood(params):
+        w = params[0]  # mixture weight for PDF1
+        if not 0 <= w <= 1:
+            return np.inf  # invalid weight
+        pdf_vals = w * pdf1(energies) + (1 - w) * pdf2(energies)
+        return -np.sum(np.log(pdf_vals + 1e-12))  # negative log-likelihood
+    
+    # --- Fit the mixture weight ---
+    print('  Log likelihood...')
+    res = minimize(mixture_log_likelihood, x0=[0.5], bounds=[(0, 1)],method='L-BFGS-B',options={'disp': False})
+    w_opt = res.x[0]
+    print(f"  PDF1 weight: {w_opt:.3f}")
+    print(f"  PDF2 weight: {1 - w_opt:.3f}")
+        
+    # --- Plots ---
+    x = np.linspace(min(energies), max(energies), 500)
+    mixture_pdf = w_opt * pdf1(x) + (1 - w_opt) * pdf2(x)
+    
+    plt.figure(figsize=(8,5))
+    plt.hist(energies, bins=100, density=True, alpha=0.4, label='Measured Energy')
+    plt.plot(x, w_opt*pdf1(x), 'r--', label='PDF1')
+    plt.plot(x, (1-w_opt)*pdf2(x), 'b--', label='PDF2')
+    plt.plot(x, mixture_pdf, 'k-', lw=2, label='Mixture fit')
+    plt.yscale('log')
+    plt.legend()
+    plt.xlabel("Energy [eV]")
+    plt.ylabel("Probability Density")
+    plt.show()
+
+    return(w_opt)
+
+#===========================================================
 
 if __name__ == "__main__":
 
-    print('\n==== QUEST-DMC Hybrid-Toy Simulation Analysis ====\n')
+    print('\n==== QUEST-DMC Hybrid-Toy Simulation Fit ====\n')
 
     # Parsing arguments
     parser = argparse.ArgumentParser()
@@ -85,74 +119,113 @@ if __name__ == "__main__":
     df_truth = pd.concat(dfs, ignore_index=True)
     '''
     noisy_trace = df_total.width.to_numpy()  # width with noise
-    print('Total number of injected events:',len(df_truth))
+    print('Total number of true injected events:',len(df_truth))
 
     # add to the df_truth DF the noisy energy
     df_total["energy"] = np.round(df_total["width"]*calibration, 1)
     total = df_total.true_width.to_numpy()  # width without noise
 
-    if plot:
-        # plots the simulated energies present in the files
-        fig, axs = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
-        axs[0].hist(
-            [df_truth.energy[df_truth.description == 'Cosmics'], df_truth.energy[df_truth.description == 'Source'], df_truth.energy[df_truth.description == 'Gammas']],
-            bins=100,
-            label=['Cosmics', 'Source', 'Gammas'],
-            color=['orange','green','red'],
-            histtype='step',
-            linewidth=1.5
-        )
-        axs[0].set_xlim(0, 2e5)
-        axs[0].set_yscale('log')
-        axs[0].set_title("Simulated energies (full range)")
-        axs[0].set_xlabel('Truth Energy [eV]')
-        axs[0].legend()
-        
-        axs[1].hist(
-            [df_truth.energy[df_truth.description == 'Cosmics'], df_truth.energy[df_truth.description == 'Source'], df_truth.energy[df_truth.description == 'Gammas']],
-            bins=2000,
-            label=['Cosmics', 'Source', 'Gammas'],
-            color=['orange','green','red'],
-            histtype='step',
-            linewidth=1.5
-        )
-        axs[1].set_xlim(0, 1e4)
-        axs[1].set_yscale('log')
-        axs[1].set_title("Simulated energies (0–10 keV)")
-        axs[1].set_xlabel('Truth Energy [eV]')
+    # plots the simulated energies present in the files
+    fig, axs = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
+    axs[0].hist(
+        [df_truth.energy[df_truth.description == 'Cosmics'], df_truth.energy[df_truth.description == 'Source'], df_truth.energy[df_truth.description == 'Gammas']],
+        bins=100,
+        label=['Cosmics', 'Source', 'Gammas'],
+        color=['orange','green','red'],
+        histtype='step',
+        linewidth=1.5
+    )
+    axs[0].set_xlim(0, 2e5)
+    axs[0].set_yscale('log')
+    axs[0].set_title("Simulated energies (full range)")
+    axs[0].set_xlabel('Truth Energy [eV]')
+    axs[0].legend()
+    
+    axs[1].hist(
+        [df_truth.energy[df_truth.description == 'Cosmics'], df_truth.energy[df_truth.description == 'Source'], df_truth.energy[df_truth.description == 'Gammas']],
+        bins=2000,
+        label=['Cosmics', 'Source', 'Gammas'],
+        color=['orange','green','red'],
+        histtype='step',
+        linewidth=1.5
+    )
+    axs[1].set_xlim(0, 1e4)
+    axs[1].set_yscale('log')
+    axs[1].set_title("Simulated energies (0–10 keV)")
+    axs[1].set_xlabel('Truth Energy [eV]')
+    
+    plt.tight_layout()
+    plt.savefig('energy_simulated.png')
+    plt.show()
 
-        plt.tight_layout()
-        plt.savefig('energy_simulated.png')
 
+    # Fit TRUTH with PDFs
+
+    print ('\nFitting...')
+    from scipy.stats import gaussian_kde
+    from scipy.optimize import minimize
+
+    # --- Load energy data ---
+    #energies = df_truth["energy"].values
+    energies = df_truth[df_truth["energy"]<10000].energy.values
+
+    # --- 1. Load your two PDFs ---
+    pdf1_data = pd.read_csv("cosmics_pdf.csv")["Energy [ev]"].values
+    pdf2_data = pd.read_csv("source_pdf.csv")["Energy [ev]"].values
+    
+    ## Estimate continuous PDFs using KDE (Kernel Density Estimation)
+    #pdf1 = gaussian_kde(pdf1_data)
+    #pdf2 = gaussian_kde(pdf2_data)
+
+    # --- Build normalized histograms for each PDF ---
+    bins = np.linspace(min(energies), max(energies), 100)  # same range, fixed bins
+    
+    hist1, bin_edges = np.histogram(pdf1_data, bins=bins, density=True)
+    hist2, _ = np.histogram(pdf2_data, bins=bins, density=True)
+    bin_centers = 0.5 * (bin_edges[1:] + bin_edges[:-1])
+    
+    # --- Interpolation functions for lookup ---
+    from scipy.interpolate import interp1d
+    pdf1 = interp1d(bin_centers, hist1, bounds_error=False, fill_value=0)
+    pdf2 = interp1d(bin_centers, hist2, bounds_error=False, fill_value=0)
+    
+    fit(energies,pdf1,pdf2)
+    
+    # Peak finding in order to fit reco
+    
     print('\nPeak finding...')
     # compute RMS of noisy trace
-    rms_noisy = np.sqrt(np.mean(noisy_trace**2))
+    rms_noisy = np.sqrt(np.mean(noisy_trace**2))  # [Hz]
     threshold_factor = 1  # define the threshold
     threshold = threshold_factor * rms_noisy  # [Hz]
+    threshold = 0.001247408194483884  # [Hz]  TRY THIS from the RMS of the FFT
     
     # find peaks above threshold; peaks are indexes of samples
     #distance=10*t_b*sampling
     from toy import read_root
-    distance=(df_total.iloc[-1].time-df_total.iloc[0].time)/(read_root(source,source_events,source_rate)[0]*max_time*len(files))*sampling  # distance estimate from the rate of injected events given the rate and the real number of simulated events
-    distance=(df_total.iloc[-1].time-df_total.iloc[0].time)/(read_root(gammas,gammas_events,gammas_rate)[0]*max_time*len(files))*sampling  # distance estimate from the rate of injected events given the rate and the real number of simulated events
-    distance=(df_total.iloc[-1].time-df_total.iloc[0].time)/(read_root(cosmics,cosmics_events,cosmics_rate)[0]*max_time*len(files))*sampling  # distance estimate from the rate of injected events given the rate and the real number of simulated events
+    #distance=(df_total.iloc[-1].time-df_total.iloc[0].time)/(read_root(source,source_events,source_rate)[0]*max_time*len(files))*sampling  # distance estimate from the rate of injected events given the rate and the real number of simulated events
+    #distance=(df_total.iloc[-1].time-df_total.iloc[0].time)/(read_root(gammas,gammas_events,gammas_rate)[0]*max_time*len(files))*sampling  # distance estimate from the rate of injected events given the rate and the real number of simulated events
+    #distance=(df_total.iloc[-1].time-df_total.iloc[0].time)/(read_root(cosmics,cosmics_events,cosmics_rate)[0]*max_time*len(files))*sampling  # distance estimate from the rate of injected events given the rate and the real number of simulated events
+    distance=(df_total.iloc[-1].time-df_total.iloc[0].time)/(( read_root(cosmics,cosmics_events,cosmics_rate)[0] + read_root(source,source_events,source_rate)[0] )*max_time*len(files))*sampling  # distance estimate from the rate of injected events given the rate and the real number of simulated events
+    distance = distance
     print('Distance for the peak finding:', distance,'samples')
     peaks, _ = find_peaks(noisy_trace, height=threshold, distance=distance)
     print('Number of peaks: ',len(peaks))
 
-    print('Plotting...')
-    plt.figure(figsize=(16, 4))
-    plt.plot(total[:360000*sampling], linestyle='', marker='.', color="black", label='Fake data')
-    plt.plot(noisy_trace[:360000*sampling], label="Fake data + FFT Noise")
-    plt.plot(peaks[peaks < 360000*sampling], noisy_trace[peaks[peaks < 360000*sampling]], "rx", label=f"Peaks > {threshold_factor}RMS: {len(peaks[peaks < 360000])}")
-    #plt.plot(peaks[:360000], noisy_trace[peaks[:360000]], "rx", label=f"Peaks > {threshold_factor}RMS: {len(peaks)}")
-    plt.axhline(threshold, color='gray', linestyle='--', label="threshold")
-    plt.legend(loc='upper right')
-    plt.title("Peak Detection Above RMS Threshold (subset)")
-    plt.xlabel("Sample")
-    plt.ylabel("Width [Hz]")
-    plt.savefig('peaks.png')
-    plt.show()
+    if plot:
+        print('Plotting...')
+        plt.figure(figsize=(16, 4))
+        plt.plot(total[:360000*sampling], linestyle='', marker='.', color="black", label='Fake data')
+        plt.plot(noisy_trace[:360000*sampling], label="Fake data + FFT Noise")
+        plt.plot(peaks[peaks < 360000*sampling], noisy_trace[peaks[peaks < 360000*sampling]], "rx", label=f"Peaks > {threshold_factor}RMS: {len(peaks[peaks < 360000])}")
+        #plt.plot(peaks[:360000], noisy_trace[peaks[:360000]], "rx", label=f"Peaks > {threshold_factor}RMS: {len(peaks)}")
+        plt.axhline(threshold, color='gray', linestyle='--', label="threshold")
+        plt.legend(loc='upper right')
+        plt.title("Peak Detection Above RMS Threshold (subset)")
+        plt.xlabel("Sample")
+        plt.ylabel("Width [Hz]")
+        plt.savefig('peaks.png')
+        plt.show()
     
     energy_threshold = threshold*calibration
     print('Energy threshold [eV]:', energy_threshold)
@@ -186,7 +259,16 @@ if __name__ == "__main__":
         t_b0, t_w0 = t_b, t_w
         p0 = [f00, f_base0, delta0, t_b0, t_w0]
 
-        popt, pcov = curve_fit(template, xi_shifted, yi, p0=p0, maxfev=200000)
+        try:
+            popt, pcov = curve_fit(template, xi_shifted, yi, p0=p0, maxfev=200000)
+        except RuntimeError as e:
+            print(f"  Curve fitting failed: {e}")
+            popt, pcov = None, None
+            continue
+        except Exception as e:
+            print(f"  Unexpected error during curve fitting: {e}")
+            popt, pcov = None, None
+            continue
 
         fit_results.append({
             "peak": peak,
@@ -196,7 +278,7 @@ if __name__ == "__main__":
             "t_b": popt[3],
             "t_w": popt[4]
         })
-
+            
         if verbose:
             # plot fitted curve
             yi_fit = template(xi_shifted, *popt)
@@ -214,6 +296,7 @@ if __name__ == "__main__":
 
     df_peaks = pd.DataFrame(fit_results)
 
+    plot_corr_matrix(pcov)
     
     # Plot t_b vs t_w
     plt.figure()
@@ -227,6 +310,11 @@ if __name__ == "__main__":
     peaks = df_peaks[(df_peaks['t_b']<1) & (df_peaks['t_w']<0.20) & (df_peaks['t_b']>0.5) & (df_peaks['t_w']>0.10)].peak
 
     print('Peaks after fit cuts:', len(peaks))
+
+    df_total = df_total.loc[peaks]
+    energies = df_total[df_total["energy"] < 10000].energy.values
+    
+    fit(energies,pdf1,pdf2)
     
     '''
     fig, axs = plt.subplots(1, 3, figsize=(18, 5))
@@ -251,6 +339,16 @@ if __name__ == "__main__":
     plt.show()
     '''
 
+
+
+    quit()
+
+
+
+
+
+    
+    
     # Plots for True-Positive (TP) and False-Positive (FP) peaks
     df_TP = df_total[df_total["id"] > -1]
     peaks_TP = [p for p in peaks if p in df_TP.index]  # list of TP peaks

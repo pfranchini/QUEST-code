@@ -129,9 +129,9 @@ def inject_events(rate, energy_values, energy_probabilities, truth_ids, descript
             #temperature=(ttc*start)*temperature_critical_superfluid(pressure).item()
 
             if verbose:
+                print('\ttemperature [K]', temperature)
                 print('start time [s]',start)
                 print('\tenergy [ev]',energy)
-                print('\ttemperature [K]', temperature)
             
             # write truth on a dataframe
             df_truth.loc[len(df_truth)] = [len(df_truth), start, energy, description]  # (ID, start time of the peak, energy, species)
@@ -237,7 +237,7 @@ if __name__ == "__main__":
     # Parsing arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('--config',type=str, help='Config file', default='config.py')
-    parser.add_argument('--noise',type=str, help='Noise model (none|normal|shot|real)', default='normal')
+    parser.add_argument('--noise',type=str, help='Noise model (none|normal|shot|real)', default='real')
     parser.add_argument('--output',type=str, help='Output Pickle filename without extension for toy and truth values', default='output')
 
     # Read config file
@@ -265,10 +265,13 @@ if __name__ == "__main__":
     if args.noise=='real':
         # Load the noise FFT data
         fft_df = pd.read_csv(fft_file)
-        #amplitudes = fft_df['fft amplitude'].values
-        freqs = fft_df['freq [Hz]'].values[:len(fft_df) // 2]
-        #amplitudes = fft_df['power'].values
-        amplitudes = fft_df['power'].values[:len(fft_df) // 2]
+
+        #freqs = fft_df['freq [Hz]'].values  # for amplitude
+        #amplitudes = fft_df['fft amplitude'].values  # for amplitude
+        
+        freqs = fft_df['freq [Hz]'].values[:len(fft_df) // 2]  # for power
+        ##amplitudes = fft_df['power'].values
+        amplitudes = fft_df['power'].values[:len(fft_df) // 2]  # for power
         
         freq_res = freqs[1] - freqs[0]  # frequency resolution from CSV
         # estimated t_size
