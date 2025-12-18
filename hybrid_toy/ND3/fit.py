@@ -31,41 +31,56 @@ exec(open("../../mod_quest.py").read())
 
 #===========================================================
 
-def fit(energies,pdf1,pdf2):
-    
+def fit(energies,pdf1,pdf2,pdf3):
+
+    from scipy.optimize import minimize
+
     # --- Define mixture model ---
     def mixture_log_likelihood(params):
-        w = params[0]  # mixture weight for PDF1
-        if not 0 <= w <= 1:
-            return np.inf  # invalid weight
-        pdf_vals = w * pdf1(energies) + (1 - w) * pdf2(energies)
+        w1, w2 = params[0], params[1]
+        w3 = 1 - w1 - w2
+
+        # quick feasibility check
+        if (w1 < 0) or (w2 < 0) or (w1 > 1) or (w2 > 1):
+            return 1e30
+        w3 = 1.0 - w1 - w2
+        if (w3 < 0) or (w3 > 1):
+            return 1e30
+        
+        pdf_vals = w1 * pdf1(energies) + w2 * pdf2(energies) + w3 * pdf3(energies)
         return -np.sum(np.log(pdf_vals + 1e-12))  # negative log-likelihood
     
     # --- Fit the mixture weight ---
     print('  Log likelihood...')
-    res = minimize(mixture_log_likelihood, x0=[0.5], bounds=[(0, 1)],method='L-BFGS-B',options={'disp': False})
-    w_opt = res.x[0]
-    print(f"  PDF1 weight: {w_opt:.3f}")
-    print(f"  PDF2 weight: {1 - w_opt:.3f}")
+    res = minimize(mixture_log_likelihood, x0=[1/3, 1/3], bounds=[(0.0, 1.0), (0.0, 1.0)], method='L-BFGS-B', options={'disp': False})
+    w1_opt, w2_opt = res.x[0], res.x[1]
+    w3_opt = 1.0 - w1_opt - w2_opt
+    print(f"  PDF1 weight: {w1_opt:.3f}")
+    print(f"  PDF2 weight: {w2_opt:.3f}")
+    print(f"  PDF3 weight: {w3_opt:.3f}")
         
     # --- Plots ---
     x = np.linspace(min(energies), max(energies), 500)
-    mixture_pdf = w_opt * pdf1(x) + (1 - w_opt) * pdf2(x)
+    w = np.clip(np.array([w1_opt, w2_opt, w3_opt]), 0.0, 1.0)
+    w = w / w.sum()
+    mixture_pdf = w[0] * np.asarray(pdf1(x)) + w[1] * np.asarray(pdf2(x)) + w[2] * np.asarray(pdf3(x))
     
     plt.figure(figsize=(8,5))
-    plt.hist(energies, bins=100, density=True, alpha=0.4, label='Measured Energy')
-    plt.plot(x, w_opt*pdf1(x), 'r--', label='PDF1')
-    plt.plot(x, (1-w_opt)*pdf2(x), 'b--', label='PDF2')
-    plt.plot(x, mixture_pdf, 'k-', lw=2, label='Mixture fit')
+    plt.hist(energies, bins=100, density=True, alpha=0.4, label='Energy')
+    plt.plot(x, w[0] * np.asarray(pdf1(x)), '--', label=f'PDF1 (w={w[0]:.3f})')
+    plt.plot(x, w[1] * np.asarray(pdf2(x)), '--', label=f'PDF2 (w={w[1]:.3f})')
+    plt.plot(x, w[2] * np.asarray(pdf3(x)), '--', label=f'PDF3 (w={w[2]:.3f})')
+    plt.plot(x, mixture_pdf, 'k-', lw=2, label='Fit')
     plt.yscale('log')
     plt.legend()
     plt.xlabel("Energy [eV]")
     plt.ylabel("Probability Density")
     plt.show()
 
-    return(w_opt)
+    return(w)
 
 #===========================================================
+
 
 if __name__ == "__main__":
 
@@ -74,7 +89,7 @@ if __name__ == "__main__":
     # Parsing arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('--config',type=str, help='Config file', default='config.py')
-    parser.add_argument('--input',type=str, help='Input Pickle filenames without extension for toy and truth values', default='output')
+    parser.add_argument('--input',type=str, help='Input Pickle filenames without extension', default='output')
     
     # Read config file
     args = parser.parse_args()
@@ -161,9 +176,8 @@ if __name__ == "__main__":
 
     # Fit TRUTH with PDFs
 
-    print ('\nFitting...')
+    print ('\nFitting the truth...')
     from scipy.stats import gaussian_kde
-    from scipy.optimize import minimize
 
     # --- Load energy data ---
     #energies = df_truth["energy"].values
@@ -172,6 +186,7 @@ if __name__ == "__main__":
     # --- 1. Load your two PDFs ---
     pdf1_data = pd.read_csv("cosmics_pdf.csv")["Energy [ev]"].values
     pdf2_data = pd.read_csv("source_pdf.csv")["Energy [ev]"].values
+    pdf3_data = pd.read_csv("gammas_pdf.csv")["Energy [ev]"].values
     
     ## Estimate continuous PDFs using KDE (Kernel Density Estimation)
     #pdf1 = gaussian_kde(pdf1_data)
@@ -182,23 +197,26 @@ if __name__ == "__main__":
     
     hist1, bin_edges = np.histogram(pdf1_data, bins=bins, density=True)
     hist2, _ = np.histogram(pdf2_data, bins=bins, density=True)
+    hist3, _ = np.histogram(pdf3_data, bins=bins, density=True)
     bin_centers = 0.5 * (bin_edges[1:] + bin_edges[:-1])
     
     # --- Interpolation functions for lookup ---
     from scipy.interpolate import interp1d
     pdf1 = interp1d(bin_centers, hist1, bounds_error=False, fill_value=0)
     pdf2 = interp1d(bin_centers, hist2, bounds_error=False, fill_value=0)
+    pdf3 = interp1d(bin_centers, hist3, bounds_error=False, fill_value=0)
     
-    fit(energies,pdf1,pdf2)
+    fit(energies,pdf1,pdf2,pdf3)
+
     
-    # Peak finding in order to fit reco
+    # Fit RECO: peak finding in order to fit
     
     print('\nPeak finding...')
     # compute RMS of noisy trace
     rms_noisy = np.sqrt(np.mean(noisy_trace**2))  # [Hz]
-    threshold_factor = 1  # define the threshold
+    threshold_factor = 2  # define the threshold
     threshold = threshold_factor * rms_noisy  # [Hz]
-    threshold = 0.001247408194483884  # [Hz]  TRY THIS from the RMS of the FFT
+    threshold = threshold_factor * 0.001247408194483884  # [Hz]  TRY THIS from the RMS of the FFT
     
     # find peaks above threshold; peaks are indexes of samples
     #distance=10*t_b*sampling
@@ -208,9 +226,9 @@ if __name__ == "__main__":
     #distance=(df_total.iloc[-1].time-df_total.iloc[0].time)/(read_root(cosmics,cosmics_events,cosmics_rate)[0]*max_time*len(files))*sampling  # distance estimate from the rate of injected events given the rate and the real number of simulated events
     distance=(df_total.iloc[-1].time-df_total.iloc[0].time)/(( read_root(cosmics,cosmics_events,cosmics_rate)[0] + read_root(source,source_events,source_rate)[0] )*max_time*len(files))*sampling  # distance estimate from the rate of injected events given the rate and the real number of simulated events
     distance = distance
-    print('Distance for the peak finding:', distance,'samples')
+    print('  Distance for the peak finding:', distance,'samples')
     peaks, _ = find_peaks(noisy_trace, height=threshold, distance=distance)
-    print('Number of peaks: ',len(peaks))
+    print('  Number of found peaks: ',len(peaks))
 
     if plot:
         print('Plotting...')
@@ -307,14 +325,17 @@ if __name__ == "__main__":
     plt.show()
 
     # cuts on the fit results
-    peaks = df_peaks[(df_peaks['t_b']<1) & (df_peaks['t_w']<0.20) & (df_peaks['t_b']>0.5) & (df_peaks['t_w']>0.10)].peak
+    peaks = df_peaks[(df_peaks['t_b']<0.7) & (df_peaks['t_w']<0.20) & (df_peaks['t_b']>0.60) & (df_peaks['t_w']>0.10)].peak
 
     print('Peaks after fit cuts:', len(peaks))
 
     df_total = df_total.loc[peaks]
-    energies = df_total[df_total["energy"] < 10000].energy.values
+    #energies = df_total[df_total["energy"] < 10000].energy.values  # MAYBE THIS IS WRONG, i WANT TO FIT THE FITTED WIDTH INSTEAD
+
+    # cut on: t_b, t_w and energy(width) to 10k
+    energies = df_peaks[(df_peaks['t_b']<0.7) & (df_peaks['t_w']<0.20) & (df_peaks['t_b']>0.60) & (df_peaks['t_w']>0.10) & (df_peaks["delta"] < 10000/calibration)].delta.values * calibration
     
-    fit(energies,pdf1,pdf2)
+    fit(energies,pdf1,pdf2,pdf3)
     
     '''
     fig, axs = plt.subplots(1, 3, figsize=(18, 5))
@@ -343,9 +364,7 @@ if __name__ == "__main__":
 
     quit()
 
-
-
-
+    #=========================================================
 
     
     

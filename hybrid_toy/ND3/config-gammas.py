@@ -11,7 +11,7 @@ import numpy as np
 ## Simulation: ###############################################
 
 verbose = False
-plot = True
+plot = False
 
 # g4quest output [MeV]
 cosmics='/data/questdmc/users/franchinip/QUEST/ND3/cosmics/output-b/cosmics.root'
@@ -24,8 +24,8 @@ source_events=7.58E+11
 gammas_events=1.78E+10  # Lizzie
 
 # rates
-cosmics_rate=6e3  # [ev/s], activity*surface of the CRY generator
-source_rate=30e3  # [ev/s], 30 kBq Fe55 source
+source_rate=0  # [ev/s], 30 kBq Fe55 source
+cosmics_rate=0 # simulate only the source
 gammas_rate=178695 # [ev]s], activity*surface of the ambient generator
 
 # noise

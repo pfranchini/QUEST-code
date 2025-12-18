@@ -16,7 +16,7 @@ def plot_corr_matrix(pcov):
     plt.colorbar(im, ax=ax, label='Correlation coefficient')
     
     # Label axes
-    param_names = ["peak","t0","f_base","delta","t_b","t_w"]
+    param_names = ["t0","f_base","delta","t_b","t_w"]
     ax.set_xticks(np.arange(len(param_names)))
     ax.set_yticks(np.arange(len(param_names)))
     ax.set_xticklabels(param_names)

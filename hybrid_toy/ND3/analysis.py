@@ -1,12 +1,18 @@
 '''
- - Can read multiple output files of the toy code
+ - Can read multiple output files of the toy.py code
  - Simple analysis of the train of pulses:
     * peak finding
     * fit of the peaks
     * truth vs reconstruction
+ - Produces a PDF as a CSV file
 
-Usage example:
+Usage examples:
     python -i analysis.py --input /data/questdmc/users/franchinip/QUEST/ND3/toy/output --config config.py
+
+    python -i analysis.py --input /data/questdmc/users/franchinip/QUEST/ND3/toy/source/source_ --config config-source.py
+    python -i analysis.py --input /data/questdmc/users/franchinip/QUEST/ND3/toy/cosmics_ --config config-cosmics.py
+    python -i analysis.py --input /data/questdmc/users/franchinip/QUEST/ND3/toy/gammas_ --config config-gammas.py
+    python -i analysis.py --input /data/questdmc/users/franchinip/QUEST/ND3/toy/all_ --config config.py
 
 ---
 P. Franchini 10/2025
@@ -40,7 +46,7 @@ if __name__ == "__main__":
     # Parsing arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('--config',type=str, help='Config file', default='config.py')
-    parser.add_argument('--input',type=str, help='Input Pickle filenames without extension for toy and truth values', default='output')
+    parser.add_argument('--input',type=str, help='Input Pickle filenames without extension', default='output')
     
     # Read config file
     args = parser.parse_args()
@@ -68,22 +74,13 @@ if __name__ == "__main__":
         
         dfs1.append(df1)
         dfs2.append(df2)
-    print('  Merging DFs...')
 
+    print('  Merging DFs...')
     df_total = pd.concat((chunk for chunk in dfs1), ignore_index=True, copy=False)
     df_truth = pd.concat((chunk for chunk in dfs2), ignore_index=True, copy=False)
     #df_total = pd.concat(dfs1, ignore_index=True, copy=False)
     #df_truth = pd.concat(dfs2, ignore_index=True, copy=False)
 
-    '''
-    files = glob.glob(args.input+'*_truth.pkl')
-    dfs = []
-    for file_idx, f in enumerate(tqdm(files, desc="  truth files"), start=1):
-        df = pd.read_pickle(f)
-        df["id"] = df["id"].where(df["id"] == -1, df["id"] + file_idx * 1_000_000)  # shift IDs by a large offset per file, unless is '-1'
-        dfs.append(df)
-    df_truth = pd.concat(dfs, ignore_index=True)
-    '''
     noisy_trace = df_total.width.to_numpy()  # width with noise
     print('Total number of injected events:',len(df_truth))
 
@@ -129,16 +126,17 @@ if __name__ == "__main__":
     rms_noisy = np.sqrt(np.mean(noisy_trace**2))
     threshold_factor = 1  # define the threshold
     threshold = threshold_factor * rms_noisy  # [Hz]
+    threshold = threshold_factor * 0.001247408194483884  # [Hz]  TRY THIS from the RMS of the FFT
     
     # find peaks above threshold; peaks are indexes of samples
     #distance=10*t_b*sampling
     from toy import read_root
-    distance=(df_total.iloc[-1].time-df_total.iloc[0].time)/(read_root(source,source_events,source_rate)[0]*max_time*len(files))*sampling  # distance estimate from the rate of injected events given the rate and the real number of simulated events
-    distance=(df_total.iloc[-1].time-df_total.iloc[0].time)/(read_root(gammas,gammas_events,gammas_rate)[0]*max_time*len(files))*sampling  # distance estimate from the rate of injected events given the rate and the real number of simulated events
+    #distance=(df_total.iloc[-1].time-df_total.iloc[0].time)/(read_root(source,source_events,source_rate)[0]*max_time*len(files))*sampling  # distance estimate from the rate of injected events given the rate and the real number of simulated events
+    #distance=(df_total.iloc[-1].time-df_total.iloc[0].time)/(read_root(gammas,gammas_events,gammas_rate)[0]*max_time*len(files))*sampling  # distance estimate from the rate of injected events given the rate and the real number of simulated events
     distance=(df_total.iloc[-1].time-df_total.iloc[0].time)/(read_root(cosmics,cosmics_events,cosmics_rate)[0]*max_time*len(files))*sampling  # distance estimate from the rate of injected events given the rate and the real number of simulated events
-    print('Distance for the peak finding:', distance,'samples')
+    print('  Distance for the peak finding:', distance,'samples')
     peaks, _ = find_peaks(noisy_trace, height=threshold, distance=distance)
-    print('Number of peaks: ',len(peaks))
+    print('  Number of found peaks: ',len(peaks))
 
     print('Plotting...')
     plt.figure(figsize=(16, 4))
@@ -305,6 +303,7 @@ if __name__ == "__main__":
 
     # Save the TP to be used as a PDF
     (df_peaks[df_peaks['peak'].isin(peaks_TP)].delta * calibration).rename('Energy [ev]').to_csv('peaks_calibrated.csv', index=False)
+
     
     # Reco vs Truth
     # loop through each peak and gather reco and truth energy

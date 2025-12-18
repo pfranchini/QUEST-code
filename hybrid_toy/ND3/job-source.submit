@@ -9,7 +9,7 @@ Universe   = vanilla
 Requirements = (OpSysName == "AlmaLinux")
 
 Executable = /usr/bin/python
-Arguments  = $(basedir)/toy.py --config config.py --noise real --output $(basedir)/all_$(ProcId)
+Arguments  = $(basedir)/toy.py --config config-source.py --noise real --output $(basedir)/source_$(ProcId)
 
 jobdir  = $(basedir)
 
@@ -25,7 +25,7 @@ log    = $(jobdir)/job-$(ProcId).log
 # resources
 request_cpus = 1
 request_disk = 1500MB
-request_memory = 5000MB
+request_memory = 3000MB
 
 # number of identical jobs
-Queue 50
+Queue 100

@@ -11,7 +11,7 @@ import numpy as np
 ## Simulation: ###############################################
 
 verbose = False
-plot = True
+plot = False
 
 # g4quest output [MeV]
 cosmics='/data/questdmc/users/franchinip/QUEST/ND3/cosmics/output-b/cosmics.root'
@@ -25,13 +25,14 @@ gammas_events=1.78E+10  # Lizzie
 
 # rates
 cosmics_rate=6e3  # [ev/s], activity*surface of the CRY generator
-source_rate=30e3  # [ev/s], 30 kBq Fe55 source
-gammas_rate=178695 # [ev]s], activity*surface of the ambient generator
+source_rate=0
+gammas_rate=0
 
 # noise
+#fft_file='Run23_8mA_01V_wcorr_fft-onlypositive.csv'
 fft_file='Run23_8mA_01V_noisepwr_quietregions.csv'
 
-max_time = 3600*100   # [second], total lenght of the sample
+max_time = 3600*10   # [second], total lenght of the sample
 #max_time = 930   # [second], total lenght of the sample
 sampling = 100    # [Hz], sampling (points per second)
 

@@ -1,13 +1,18 @@
 
 Code:
- - toy.py: produces the toy simulation
+ 1- toy.py: runs the toy simulation; produces a Pickle file
    example:
      python toy.py --noise real --output source
 
- - analysis.py: analysis of the output of the hybrid toys; can read multiple files and takes care of the Truth IDs
+ 2- analysis.py: analysis of the output of the hybrid toys; can read multiple files and takes care of the Truth IDs; produces PDFs as csv files
    example:
-     python analysis.py --input source
+     python analysis.py --input source --config config-source.py
 
+ 3- fit.py: fit with multiple PDFs both the Truth and the Reco (PDFs are hardcoded in the file)
+   example:
+     python -i analysis.py --input /data/questdmc/users/franchinip/QUEST/ND3/toy/all_ --config config.py
+
+---
 
 Condor submission in the Oxford cluster:
   condor_submit job.submit

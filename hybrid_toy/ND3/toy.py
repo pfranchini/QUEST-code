@@ -4,9 +4,10 @@
     * energy PDFs from g4quest
 
  - Output:
-    Toy simulation Pickle file:
-        df:sample|width with noise|true width|ID; calibration
-        ID|start time of the peak|energy|specie
+    Toy simulation single Pickle file:
+        df_total: sample|width with noise|true width|ID;
+        calibration;
+        df_truth: ID|start time of the peak|energy|specie
 
 P. Franchini 10/2025
 '''
