@@ -1,7 +1,7 @@
 '''
  - QUEST-DMC WP1 full toy simulation of a train of pulses, for ND3, given
     * a noise FFT    
-    * energy PDFs from g4quest
+    * energy PDFs from g4quest and from merged radiogenics
 
  - Output:
     Toy simulation single Pickle file:
@@ -9,7 +9,7 @@
         calibration;
         df_truth: ID|start time of the peak|energy|specie
 
-P. Franchini 10/2025
+P. Franchini 1/2026
 '''
 
 import os
@@ -31,8 +31,29 @@ exec(open("../../mod_quest.py").read())
 
 #import matplotlib
 #matplotlib.use("Agg")  # use headless backend
-
 #===========================================================
+
+def read_radiogenics(radiogenics): #,simulation_events,simulation_rate):
+    '''
+    Read a CSV file to generate a PDF for the events injection. Files was produced by the merge code for the radiogenics.
+      Arguments: CSV file
+      Returns: expected deposited rate [ev/second], (energy_values, energy_probabilities)
+    '''
+    
+    time=86400 # [s] # as in the merged pdf
+    
+    radiogenics_file = np.loadtxt(radiogenics)
+    radiogenics_density = radiogenics_file[:, 0]  # [0-200] keV as in the merged pdf
+    radiogenics_energy  = radiogenics_file[:, 1]*1e3  # [ev] as in the merged pdf
+
+    energy_values = radiogenics_energy
+    energy_probabilities = radiogenics_density/sum(radiogenics_density) # normalised to 1
+    rate = np.sum(radiogenics_density * 0.1)/time
+
+    print(rate, energy_values, energy_probabilities)
+    
+    return rate, energy_values, energy_probabilities
+
 
 def read_root(simulation,simulation_events,simulation_rate):
     '''
@@ -80,20 +101,21 @@ def read_root(simulation,simulation_events,simulation_rate):
         plt.grid(True)
         plt.show()
     '''
-    
+
     rate = len(pdf_energy)*simulation_rate/simulation_events
-        
+
+    print(rate, energy_values, energy_probabilities)
     return rate, energy_values, energy_probabilities
 
 
 def inject_events(rate, energy_values, energy_probabilities, truth_ids, description):
     '''
     Inject a train of events in a baseline
-    Arguments: rate, energy_values, energy_probabilities, truth_ids, description
+    Arguments: rate [ev/second], energy_values, energy_probabilities, truth_ids, description
     Return: truth array
     '''
     # Truth values, full length sample with correct sampling
-    t = np.arange(0,max_time, 1/sampling)  # [s]
+    t = np.arange(0, max_time, 1/sampling)  # [s]
     truth = np.zeros_like(t) # to store truth values
     
     chunk_size = 36000
@@ -306,7 +328,9 @@ if __name__ == "__main__":
     cosmics_rate, cosmics_energy_values, cosmics_energy_probabilities = read_root(cosmics,cosmics_events,cosmics_rate)
     source_rate, source_energy_values, source_energy_probabilities = read_root(source,source_events,source_rate)
     gammas_rate, gammas_energy_values, gammas_energy_probabilities = read_root(gammas,gammas_events,gammas_rate)
-
+    neutrons_rate, neutrons_energy_values, neutrons_energy_probabilities = read_root(neutrons,neutrons_events,neutrons_rate)
+    radiogenics_rate, radiogenics_energy_values, radiogenics_energy_probabilities = read_radiogenics(radiogenics) #,radiogenics_events,radiogenics_rate)
+    
     if cosmics_rate>0:
         cosmics_truth = inject_events(cosmics_rate, cosmics_energy_values, cosmics_energy_probabilities, truth_ids, 'Cosmics')
         total += cosmics_truth
@@ -316,13 +340,19 @@ if __name__ == "__main__":
     if gammas_rate>0:
         gammas_truth = inject_events(gammas_rate, gammas_energy_values, gammas_energy_probabilities, truth_ids, 'Gammas')
         total += gammas_truth
+    if neutrons_rate>0:
+        neutrons_truth = inject_events(neutrons_rate, neutrons_energy_values, neutrons_energy_probabilities, truth_ids, 'Neutrons')
+        total += neutrons_truth
+    if radiogenics_rate>0:
+        radiogenics_truth = inject_events(radiogenics_rate, radiogenics_energy_values, radiogenics_energy_probabilities, truth_ids, 'Radiogenics')
+        total += radiogenics_truth
 
     fig, axs = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
     axs[0].hist(
-        [df_truth.energy[df_truth.description == 'Cosmics'], df_truth.energy[df_truth.description == 'Source'], df_truth.energy[df_truth.description == 'Gammas']],
+        [df_truth.energy[df_truth.description == 'Cosmics'], df_truth.energy[df_truth.description == 'Source'], df_truth.energy[df_truth.description == 'Gammas'], df_truth.energy[df_truth.description == 'Neutrons'], df_truth.energy[df_truth.description == 'Radiogenics']],
         bins=100,
-        label=['Cosmics', 'Source', 'Gammas'],
-        color=['orange','green','red'],
+        label=['Cosmics', 'Source', 'Gammas', 'Neutrons', 'Radiogenics'],
+        color=['orange','green','red','blue','darkviolet'],
         histtype='step',
         linewidth=1.5
     )
@@ -333,10 +363,10 @@ if __name__ == "__main__":
     axs[0].legend()
     
     axs[1].hist(
-        [df_truth.energy[df_truth.description == 'Cosmics'], df_truth.energy[df_truth.description == 'Source'], df_truth.energy[df_truth.description == 'Gammas']],
+        [df_truth.energy[df_truth.description == 'Cosmics'], df_truth.energy[df_truth.description == 'Source'], df_truth.energy[df_truth.description == 'Gammas'], df_truth.energy[df_truth.description == 'Neutrons'], df_truth.energy[df_truth.description == 'Radiogenics']],
         bins=2000,
-        label=['Cosmics', 'Source', 'Gammas'],
-        color=['orange','green','red'],
+        label=['Cosmics', 'Source', 'Gammas', 'Neutrons', 'Radiogenics'],
+        color=['orange','green','red','blue','darkviolet'],
         histtype='step',
         linewidth=1.5
     )
@@ -468,6 +498,10 @@ if __name__ == "__main__":
         plt.plot(t, source_truth, linestyle='--', color='green', label='Source truth')
     if gammas_rate>0:
         plt.plot(t, gammas_truth, linestyle='--', color='red', label='Gammas truth')
+    if neutrons_rate>0:
+        plt.plot(t, neutrons_truth, linestyle='--', color='blue', label='Neutrons truth')
+    if radiogenics_rate>0:
+        plt.plot(t, radiogenics_truth, linestyle='--', color='blue', label='Radiogenics truth')
     plt.xlabel('time [s]')
     plt.yscale('linear')
     plt.ylabel('$\Delta f$ [Hz]')

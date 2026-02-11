@@ -2,7 +2,8 @@
 Code:
  1- toy.py: runs the toy simulation; produces a Pickle file
    example:
-     python toy.py --noise real --output source
+     python toy.py --noise real (--config config.py) --output all
+     python toy.py --noise real --config config-source.py --output source
 
  2- analysis.py: analysis of the output of the hybrid toys; can read multiple files and takes care of the Truth IDs; produces PDFs as csv files
    example:
