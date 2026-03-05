@@ -5,11 +5,11 @@
 
  - Output:
     Toy simulation single Pickle file:
-        df_total: sample|width with noise|true width|ID;
-        calibration;
-        df_truth: ID|start time of the peak|energy|specie
+       * df_total: sample | width with noise [Hz] | true width [Hz] | ID;
+       * calibration [eV/Hz];
+       * df_truth: ID | start time of the peak [s] | energy [eV] | specie
 
-P. Franchini 1/2026
+P. Franchini 3/2026
 '''
 
 import os
@@ -70,6 +70,7 @@ def read_root(simulation,simulation_events,simulation_rate):
     pdf_energy = arrays['fEdep']*1e3  # [keV]
     bins = np.histogram_bin_edges(np.concatenate([pdf_energy]), bins=2000, range=(0,max_energy))
     bin_width = np.diff(bins)[0]  # All bins are uniform, so one is enough
+    print('bin width',bin_width)
     simulation_weight_per_event = (simulation_rate / simulation_events) * time / bin_width
     simulation_weights = np.full_like(pdf_energy, simulation_weight_per_event)    
 
@@ -85,7 +86,7 @@ def read_root(simulation,simulation_events,simulation_rate):
         plt.tight_layout()
         plt.show()
     '''
-    
+
     hist, bin_edges = np.histogram(pdf_energy, bins=bins, weights=simulation_weights, density=True)
     energy_values = 0.5 * (bin_edges[1:] + bin_edges[:-1]) * 1e3 # [eV]
     energy_probabilities = hist / np.sum(hist)
@@ -117,9 +118,13 @@ def inject_events(rate, energy_values, energy_probabilities, truth_ids, descript
     # Truth values, full length sample with correct sampling
     t = np.arange(0, max_time, 1/sampling)  # [s]
     truth = np.zeros_like(t) # to store truth values
-    
-    chunk_size = 36000
-    chunks = max_time//chunk_size
+
+    # only uses chunks if needed for high max_time (>10 hours)
+    if max_time > 36000:
+        chunk_size = 36000
+    else:
+        chunk_size = max_time
+    chunks = int(max_time//chunk_size)
 
     for i in range(chunks):
         chuck_start = i*chunk_size
@@ -202,7 +207,7 @@ def inject_events(rate, energy_values, energy_probabilities, truth_ids, descript
         
     return truth
 
-def calc_fft(t, w):
+def calc_fft_amplitude(t, w):
     '''
     Calculate fft of tracking time series data
     Inputs: time array, width change array
@@ -215,7 +220,6 @@ def calc_fft(t, w):
     t_size = t.size
     s_int = 1/sampling  # sampling interval, s
 
-    '''
     #w_noise_fft = scipy.fftpack.fft(w)
     w_noise_fft = fft(w)
     w_noise_fft = rfft(w) # only real, avoid negative frequencies
@@ -223,18 +227,29 @@ def calc_fft(t, w):
     #w_noise_freq = np.abs(scipy.fftpack.fftfreq(t_size, s_int))
     w_noise_freq = fftfreq(t_size, d=s_int)
     w_noise_freq = rfftfreq(t_size, d=s_int) # only real
-    #return w_noise_freq, w_noise_amp
+    
+    return w_noise_freq, w_noise_amp
+
+def calc_fft_power(t, w):
     '''
+    Calculate fft of tracking time series data
+    Inputs: time array, width change array
+    Outputs: frequency array, fft amplitude array
+    E.L.
+    '''
+    
+    t_size = t.size
+    s_int = 1/sampling  # sampling interval [s]
 
-    w_noise_fft = scipy.fftpack.fft(w)
-
-    #w_noise_amp = 2 / t_size * np.abs(w_noise_fft)
+    w_noise_fft  = np.fft.rfft(w)
+    w_noise_freq = np.fft.rfftfreq(t_size, s_int)
     w_noise_power = (2 / t_size * np.abs(w_noise_fft))**2
 
-    w_noise_freq = (scipy.fftpack.fftfreq(t_size, s_int))
-    
-    return w_noise_freq, w_noise_power
+    #w_noise_fft = scipy.fftpack.fft(w)
+    #w_noise_power = (2 / t_size * np.abs(w_noise_fft))**2
+    #w_noise_freq = (scipy.fftpack.fftfreq(t_size, s_int))
 
+    return w_noise_freq, w_noise_power
 
 def shot_noise(_deltaf,_fb,_pressure,_temperature):
     '''
@@ -260,7 +275,7 @@ if __name__ == "__main__":
     # Parsing arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('--config',type=str, help='Config file', default='config.py')
-    parser.add_argument('--noise',type=str, help='Noise model (none|normal|shot|real)', default='real')
+    parser.add_argument('--noise',type=str,  help='Noise model (none|normal|shot|real)', default='real')
     parser.add_argument('--output',type=str, help='Output Pickle filename without extension for toy and truth values', default='output')
 
     # Read config file
@@ -291,24 +306,21 @@ if __name__ == "__main__":
 
         #freqs = fft_df['freq [Hz]'].values  # for amplitude
         #amplitudes = fft_df['fft amplitude'].values  # for amplitude
-        
         freqs = fft_df['freq [Hz]'].values[:len(fft_df) // 2]  # for power
-        ##amplitudes = fft_df['power'].values
-        amplitudes = fft_df['power'].values[:len(fft_df) // 2]  # for power
+        powers = fft_df['power'].values[:len(fft_df) // 2]  # for power
         
         freq_res = freqs[1] - freqs[0]  # frequency resolution from CSV
-        # estimated t_size
-        t_size_est = int(round(sampling / freq_res))
+        t_size_est = int(round(sampling / freq_res))         # estimated t_size
         print('Number of samples of the FFT:\t',t_size_est)
 
         #fft_rms = np.sqrt(0.5 * np.sum(amplitudes**2))  # for amplitude
-        fft_rms = np.sqrt(0.5 * np.sum(np.sqrt(amplitudes)**2))  # for power
-        print('Estimated RMS from FFT:\t', fft_rms)
+        fft_rms = np.sqrt(0.5 * np.sum(np.sqrt(powers)**2))  # for power
+        print('Estimated RMS from FFT [mHz]:\t', fft_rms*1e3)
 
         if plot:
             plt.figure(figsize=(10,4))
             plt.title('Noise FFT from ND3 data - '+fft_file+' - samples: '+str(t_size_est))
-            plt.loglog(freqs,amplitudes)
+            plt.loglog(freqs,powers)
             plt.xlabel('Frequency [Hz]')
             plt.ylabel('Power')
             plt.grid(which='minor',alpha=0.3)
@@ -330,7 +342,7 @@ if __name__ == "__main__":
     gammas_rate, gammas_energy_values, gammas_energy_probabilities = read_root(gammas,gammas_events,gammas_rate)
     neutrons_rate, neutrons_energy_values, neutrons_energy_probabilities = read_root(neutrons,neutrons_events,neutrons_rate)
     radiogenics_rate, radiogenics_energy_values, radiogenics_energy_probabilities = read_radiogenics(radiogenics) #,radiogenics_events,radiogenics_rate)
-    
+
     if cosmics_rate>0:
         cosmics_truth = inject_events(cosmics_rate, cosmics_energy_values, cosmics_energy_probabilities, truth_ids, 'Cosmics')
         total += cosmics_truth
@@ -382,10 +394,13 @@ if __name__ == "__main__":
     #============================================================
 
     # Adds a constant baseline:
-    #total += f_base  # [Hz]
-    #cosmics_truth += f_base  # [Hz]
-    #source_truth += f_base  # [Hz]
-
+    total += f_base  # [Hz]
+    if cosmics_rate>0: cosmics_truth += f_base  # [Hz]
+    if source_rate>0: source_truth += f_base  # [Hz]
+    if gammas_rate>0: gammas_truth += f_base  # [Hz]
+    if neutrons_rate>0: neutrons_truth += f_base  # [Hz]
+    if radiogenics_rate>0: radiogenics_truth += f_base  # [Hz]
+    
     '''
     # Add non-constant baseline:    # Skipping for now since not much effect in 2 hour traces
     print('\nAdding non-constant baseline...')
@@ -403,47 +418,108 @@ if __name__ == "__main__":
         noise = 0
         noisy_trace = total
     if args.noise=='normal':
+        noisy_trace = total
         for i in tqdm(range(len(total))):
-            total[i] = np.random.normal(total[i], total[i]/10000)  # FIX ME
+            #total[i] = np.random.normal(total[i], total[i]/10000)  # FIX ME
+            noisy_trace[i] = np.random.normal(total[i], total[i]/10000)  # FIX ME
     if args.noise=='shot':
         for i in tqdm(range(len(total))):
             total[i] = np.random.normal(total[i], shot_noise(total[i],f_base[i],pressure,temperature[i]))
     if args.noise=='real':
         
+        '''
         n_samples = int(max_time*sampling)
         
         # 1. compute the frequency bins needed for np.fft.irfft
         #target_fft_freqs = np.fft.rfftfreq(n_samples, d=1/sampling)
         target_fft_freqs = np.fft.rfftfreq(t_size_est, d=1/sampling)
 
-        print("Original freqs range: ", freqs[0], freqs[-1])
-        print("Target FFT freqs range: ", target_fft_freqs[0], target_fft_freqs[-1])
+        print("  Original freqs range:   ", freqs[0], freqs[-1])
+        print("  Target FFT freqs range: ", target_fft_freqs[0], target_fft_freqs[-1])
 
         # 2. interpolate amplitude values to match FFT bins
-        interp_amplitudes = np.interp(target_fft_freqs, freqs, amplitudes)
-        interp_amplitude = np.sqrt(interp_amplitudes)
+        interp_powers = np.interp(target_fft_freqs, freqs, powers)
+        interp_powers = np.sqrt(interp_powers)
         
         # 3. apply random phase to create complex FFT spectrum
-        random_phases = np.exp(1j * 2 * np.pi * np.random.rand(len(interp_amplitudes)))
-        spectrum = interp_amplitudes * random_phases
+        random_phases = np.exp(1j * 2 * np.pi * np.random.rand(len(interp_powers)))
+        spectrum = interp_powers * random_phases
         
         # 4. inverse FFT to generate noise in time domain
         noise = np.fft.irfft(spectrum, n=n_samples)
         noise *= n_samples/2
         #noise *= t_size_est/2
 
-        # Scale to the FFT RMS
+        # Scale to the FFT RMS: should be 1, can be removed
         current_rms = np.sqrt(np.mean(noise**2))
+        print('  FFT rms scale factor',fft_rms / current_rms)
+        noise *= (fft_rms / current_rms)
+        '''
+
+        n_samples = int(max_time*sampling)
+        #target_fft_freqs = np.fft.rfftfreq(t_size_est, d=1/sampling)
+        target_fft_freqs = np.fft.rfftfreq(n_samples, d=1/sampling) # IS THIS A FIX?????
+        
+        # Original FFT length used to create the CSV
+        ##N0 = t.size      # this must be the t_size used in calc_fft_power
+        ##fs = sampling
+
+        print("CSV max freq:       ", freqs[-1])
+        print("Generated max freq: ", target_fft_freqs[-1])
+        print("Lowest CSV freq:", freqs[0])
+        print("Lowest new freq:", target_fft_freqs[1])
+        delta_f0 = sampling / t.size
+
+        # ----------------------------------------------------------
+        # 1. Convert CSV power to PSD (remove original N dependence)
+        psd_values = powers * (t.size / (4 * sampling)) 
+        
+        # 2. Interpolate PSD to new FFT grid
+        interp_psd = np.interp(target_fft_freqs, freqs, psd_values)
+        
+        # 3. Convert PSD to per-bin power for new n_samples
+        delta_f_new = sampling / n_samples
+        bin_power = interp_psd * delta_f_new
+
+        # 4. Convert bin power to FFT magnitude
+        fft_amplitude = np.sqrt(bin_power) * n_samples
+        print("DC variance contribution:",      psd_values[0] * delta_f0)
+        print("Total variance:",      np.sum(psd_values * delta_f0))
+        
+        # Random phase
+        random_phases = np.exp(1j * 2 * np.pi * np.random.rand(len(fft_amplitude)))
+        spectrum = fft_amplitude * random_phases
+
+        # 5. Inverse FFT
+        noise = np.fft.irfft(spectrum, n=n_samples)
+
+        current_rms = np.sqrt(np.mean(noise**2))
+        print('  FFT rms scale factor',fft_rms / current_rms)
         noise *= (fft_rms / current_rms)
 
+        '''
+        delta_f_new = sampling / n_samples
+        variance_generated = np.sum(interp_psd * delta_f_new)
+        print("Generated variance:", variance_generated)
+
+        delta_f0 = sampling / t.size
+        variance_original = np.sum(psd_values * delta_f0)
+        print("Original variance:", variance_original)
+        '''
+        
         # calculate RMS from the FFT
         power_spectrum = np.abs(spectrum)**2
         power_spectrum[1:-1] *= 2
         noise_fft = np.sqrt(np.sum(power_spectrum) / n_samples**2)
-
+        print('  Estimated RMS from FFT [mHz]:\t', noise_fft*1e3)
+        
         # calculate RMS from the generated noise
         noise_rms = np.sqrt(np.mean(noise**2))
-
+        noise_std = np.std(noise)
+        print('  Calculated RMS from generated noise [mHz]:\t', noise_rms*1e3)
+        print('  Calculated STD from generated noise [mHz]:\t', noise_std*1e3)
+        print('  Energy corresponding to the noise RMS [eV]:\t', noise_std*calibration)
+        
         plt.figure(figsize=(10, 4))
         plt.title(f'Generated noise from FFT - FFT RMS: {fft_rms:.7f}, Width RMS: {noise_rms:.7f}')
         plt.plot(t, noise)
@@ -453,7 +529,7 @@ if __name__ == "__main__":
         
         # add noise to the signal
         noisy_trace = total + noise
-
+        
         '''
         # Calculate FFT on the noise generated trace
         noise_fft = np.fft.rfft(noise)
@@ -472,16 +548,41 @@ if __name__ == "__main__":
         plt.show()
         '''
 
-        # Calculate FFT on the noise generated trace
-        w_noise_freq, w_noise_amp = calc_fft(t[:t_size_est], noise[:t_size_est]) #t_size_est
-        w_noise_freq, w_noise_amp = calc_fft(t, noise) #t_size_est
+        # Compare ND3 noise with the noise generated trace generating PSDs
+        # 1. Convert ND3 power spectrum to PSD
+        N0 = 2 * len(freqs)          # original FFT length (since freqs = positive half)
+        # Convert to PSD [power/Hz]
+        psd_csv = powers * (N0 / (4.0 * sampling))
+
+        # 2. Compute PSD of generated noise
+        # rFFT of generated noise
+        X = np.fft.rfft(noise)
+        # True one-sided PSD
+        psd_gen = (np.abs(X)**2) / (sampling * noise.size)
+        #psd_gen[1:-1] *= 2   # one-sided correction
+        freqs_gen = np.fft.rfftfreq(noise.size, d=1/sampling)
         
         plt.figure(figsize=(10,4))
+        plt.loglog(freqs, psd_csv, label="PSD from ND3 data")
+        plt.loglog(freqs_gen, psd_gen, label="PSD from generated noise")
+        plt.xlabel("Frequency [Hz]")
+        plt.ylabel("PSD [power/Hz]")
         plt.title('Noise FFT comparison - '+fft_file+' - samples: '+str(t_size_est))
-        plt.loglog(freqs,amplitudes, alpha=0.7, label='FFT from ND3 data')
-        plt.loglog(w_noise_freq, np.sqrt(w_noise_amp), alpha=0.7, label='FFT from generated noise')
+        plt.legend()
+        plt.grid(True, which="both")
+        plt.show()
+
+        
+        # Calculate FFT on the noise generated trace
+        #w_noise_freq, w_noise_amp = calc_fft(t[:t_size_est], noise[:t_size_est]) #t_size_est
+        w_noise_freq, w_noise_power = calc_fft_power(t, noise) #t_size_est
+
+        plt.figure(figsize=(10,4))
+        plt.title('Noise FFT comparison - '+fft_file+' - samples: '+str(t_size_est))
+        plt.loglog(freqs,powers, color='red', alpha=0.7, label='FFT from ND3 data')
+        plt.loglog(w_noise_freq,w_noise_power, color='green', alpha=0.7, label='FFT from generated noise')
         plt.xlabel('Frequency [Hz]')
-        plt.ylabel('Power')
+        plt.ylabel('Power')  # which unit?
         plt.grid(which='minor',alpha=0.3)
         plt.legend()
         plt.show()        
@@ -515,6 +616,6 @@ if __name__ == "__main__":
     import pickle
     with open(args.output + ".pkl", "wb") as f:
         pickle.dump({"df_total": df_total, "calibration": calibration, "df_truth": df_truth}, f)
-    print('Output file:\t',args.output+'.pkl')
+    print('\nOutput file:\t',args.output+'.pkl')
 
     print('\n==== End ====\n')
