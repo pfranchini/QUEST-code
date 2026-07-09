@@ -2,14 +2,14 @@
 # Run as: condor_submit job.submit
 #
 
-basedir    = /data/questdmc/users/franchinip/QUEST/ND3/toy
+basedir    = /data/questdmc/users/franchinip/QUEST/ND3/toy/cosmics
 
 Universe   = vanilla
 
 Requirements = (OpSysName == "AlmaLinux")
 
 Executable = /usr/bin/python
-Arguments  = $(basedir)/toy.py --config config-cosmics.py --noise real --output $(basedir)/cosmics_$(ProcId)
+Arguments  = $(basedir)/../toy.py --config config-cosmics.py --noise real --output $(basedir)/all_$(ProcId)
 
 jobdir  = $(basedir)
 
@@ -24,8 +24,8 @@ log    = $(jobdir)/job-$(ProcId).log
 
 # resources
 request_cpus = 1
-request_disk = 1500MB
-request_memory = 3000MB
+request_disk = 2500MB
+request_memory = 5500MB
 
 # number of identical jobs
-Queue 10
+Queue 200

@@ -9,7 +9,7 @@
        * calibration [eV/Hz];
        * df_truth: ID | start time of the peak [s] | energy [eV] | specie
 
-P. Franchini 3/2026
+P. Franchini 4/2026
 '''
 
 import os
@@ -50,7 +50,7 @@ def read_radiogenics(radiogenics): #,simulation_events,simulation_rate):
     energy_probabilities = radiogenics_density/sum(radiogenics_density) # normalised to 1
     rate = np.sum(radiogenics_density * 0.1)/time
 
-    print(rate, energy_values, energy_probabilities)
+    #print(rate, energy_values, energy_probabilities)
     
     return rate, energy_values, energy_probabilities
 
@@ -70,7 +70,6 @@ def read_root(simulation,simulation_events,simulation_rate):
     pdf_energy = arrays['fEdep']*1e3  # [keV]
     bins = np.histogram_bin_edges(np.concatenate([pdf_energy]), bins=2000, range=(0,max_energy))
     bin_width = np.diff(bins)[0]  # All bins are uniform, so one is enough
-    print('bin width',bin_width)
     simulation_weight_per_event = (simulation_rate / simulation_events) * time / bin_width
     simulation_weights = np.full_like(pdf_energy, simulation_weight_per_event)    
 
@@ -105,7 +104,7 @@ def read_root(simulation,simulation_events,simulation_rate):
 
     rate = len(pdf_energy)*simulation_rate/simulation_events
 
-    print(rate, energy_values, energy_probabilities)
+    #print(rate, energy_values, energy_probabilities)
     return rate, energy_values, energy_probabilities
 
 
@@ -135,8 +134,8 @@ def inject_events(rate, energy_values, energy_probabilities, truth_ids, descript
         print('\n'+description)
         print('Number of events to be generated:\t',N)
     
-        # generate N random start times
-        starts = np.sort(np.random.randint(chuck_start,chuck_end,N))
+        # generate N random start times, keeping the sampling resolution (1/sampling [s])
+        starts = np.sort(np.random.randint(chuck_start*sampling,chuck_end*sampling,N))/100
 
         # Truth values, full length sample with correct sampling
         t_chunk = np.arange(chuck_start, chuck_end, 1/sampling)  # [s]
@@ -145,8 +144,8 @@ def inject_events(rate, energy_values, energy_probabilities, truth_ids, descript
         # generate a train of N events
         print('Generate events...')
         # Precompute static coefficients
-        exp_factor = np.power(t_b / t_w, t_w / (t_b - t_w))
-        coeff_factor = (t_b / (t_b - t_w))
+        #exp_factor = np.power(t_b / t_w, t_w / (t_b - t_w))
+        #coeff_factor = (t_b / (t_b - t_w))
 
         for start in tqdm(starts):
          
@@ -172,7 +171,7 @@ def inject_events(rate, energy_values, energy_probabilities, truth_ids, descript
             
             #delta, _ = DeltaWidth_from_Energy(energy,pressure,temperature,diameter)
             delta = energy/calibration  # faster for constant temperatures
-            
+
             if verbose:
                 print('\tdelta [Hz]', delta)
 
@@ -184,19 +183,29 @@ def inject_events(rate, energy_values, energy_probabilities, truth_ids, descript
             total += deltaf
             truth += deltaf
             '''
+
+            # wire time-constant dependency on the amplitude:
+            #t_w = -0.83*delta + 0.18  # from ND3
+            
             # Winkelmann function: Delta f vs time (fast method)
             exp_arg1 = -(t_chunk - start) / t_b
             exp_arg2 = -(t_chunk - start) / t_w
             
             # Mask only the valid (t > start) values to avoid NaNs early
+            truth_window = 2
             valid_chunk = (t_chunk > start) & (t_chunk <= start + 7*t_b)  # pulse drops < 0.1%
-            valid = (t > start) & (t <= start + 7*t_b)  # pulse drops < 0.1%
+            valid = (t > start) & (t <= start + truth_window*t_b)  # validity for the truth assignment (shorted than the pulse validity to reduce pile up)
             
             deltaf = np.zeros_like(t_chunk)
+
+            # are here not pre-computed
+            exp_factor = np.power(t_b / t_w, t_w / (t_b - t_w))
+            coeff_factor = (t_b / (t_b - t_w))
+            
             coeff = delta * exp_factor * coeff_factor
 
             deltaf[valid_chunk] = coeff * (np.exp(exp_arg1[valid_chunk]) - np.exp(exp_arg2[valid_chunk]))
-            truth_ids[valid] = len(df_truth) - 1 # the index of the truth ID is the size of the truth array so far
+            truth_ids[valid] = len(df_truth) - 1  # the index of the truth ID is the 'truth_window', shorter than the pulse
 
             truth_chunk += deltaf
             
@@ -341,7 +350,8 @@ if __name__ == "__main__":
     source_rate, source_energy_values, source_energy_probabilities = read_root(source,source_events,source_rate)
     gammas_rate, gammas_energy_values, gammas_energy_probabilities = read_root(gammas,gammas_events,gammas_rate)
     neutrons_rate, neutrons_energy_values, neutrons_energy_probabilities = read_root(neutrons,neutrons_events,neutrons_rate)
-    radiogenics_rate, radiogenics_energy_values, radiogenics_energy_probabilities = read_radiogenics(radiogenics) #,radiogenics_events,radiogenics_rate)
+    if radiogenics_rate>0:
+        radiogenics_rate, radiogenics_energy_values, radiogenics_energy_probabilities = read_radiogenics(radiogenics) #,radiogenics_events,radiogenics_rate)
 
     if cosmics_rate>0:
         cosmics_truth = inject_events(cosmics_rate, cosmics_energy_values, cosmics_energy_probabilities, truth_ids, 'Cosmics')

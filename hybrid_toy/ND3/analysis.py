@@ -69,7 +69,7 @@ if __name__ == "__main__":
 
         df1["id"] = df1["id"].where(df1["id"] == -1, df1["id"] + file_idx * 1_000_000)  # shift IDs by a large offset per file, unless is '-1'
         df2["id"] = df2["id"].where(df2["id"] == -1, df2["id"] + file_idx * 1_000_000)  # shift IDs by a large offset per file, unless is '-1'
-        df1["time"] = df1["time"] + max_time*(file_idx-1)  # add to the time shift to order the samples
+        df1["time"] = df1["time"] + max_time*(file_idx-1)  # add to the time shift to order the samples (FIX can probably read the max_time from the file instead)
         df2["start"] = df2["start"] + max_time*(file_idx-1)  # add to the time shift to order the samples; start is not used in the code
         
         dfs1.append(df1)
@@ -90,6 +90,39 @@ if __name__ == "__main__":
 
     if plot:
         # plots the simulated energies present in the files
+        fig, axs = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
+        axs[0].hist(
+            [df_truth.energy[df_truth.description == 'Cosmics'], df_truth.energy[df_truth.description == 'Source'], df_truth.energy[df_truth.description == 'Gammas'], df_truth.energy[df_truth.description == 'Neutrons'], df_truth.energy[df_truth.description == 'Radiogenics']],
+            bins=100,
+            label=['Cosmics', 'Source', 'Gammas', 'Neutrons', 'Radiogenics'],
+            color=['orange','green','red','blue','darkviolet'],
+            histtype='step',
+            linewidth=1.5
+        )
+        axs[0].set_xlim(0, 2e5)
+        axs[0].set_yscale('log')
+        axs[0].set_title("Simulated energies (full range)")
+        axs[0].set_xlabel('Truth Energy [eV]')
+        axs[0].legend()
+
+        axs[1].hist(
+            [df_truth.energy[df_truth.description == 'Cosmics'], df_truth.energy[df_truth.description == 'Source'], df_truth.energy[df_truth.description == 'Gammas'], df_truth.energy[df_truth.description == 'Neutrons'], df_truth.energy[df_truth.description == 'Radiogenics']],
+            bins=2000,
+            label=['Cosmics', 'Source', 'Gammas', 'Neutrons', 'Radiogenics'],
+            color=['orange','green','red','blue','darkviolet'],
+            histtype='step',
+            linewidth=1.5
+        )
+        axs[1].set_xlim(0, 1e4)
+        axs[1].set_yscale('log')
+        axs[1].set_title("Simulated energies (0–10 keV)")
+        axs[1].set_xlabel('Truth Energy [eV]')
+
+        plt.tight_layout()
+        plt.savefig('energy_simulated.png')
+        plt.show()
+        
+        '''
         fig, axs = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
         axs[0].hist(
             [df_truth.energy[df_truth.description == 'Cosmics'], df_truth.energy[df_truth.description == 'Source'], df_truth.energy[df_truth.description == 'Gammas']],
@@ -120,13 +153,19 @@ if __name__ == "__main__":
 
         plt.tight_layout()
         plt.savefig('energy_simulated.png')
-
+        '''
+        
     print('\nPeak finding...')
-    # compute RMS of noisy trace
+    # compute RMS of noisy trace and subtracts it (SHOULD PROBABLY BE DONE ON THE QUITE PARTS, AVOIDING PEAKS, OR IN ANOTHER WAY e.g. fitting the baseline)
     rms_noisy = np.sqrt(np.mean(noisy_trace**2))
+    noisy_trace -= rms_noisy
+    total -= rms_noisy
+    # recalculates RMS on the subtracted noise trace
+    rms_noisy = np.sqrt(np.mean(noisy_trace**2))
+    print('RMS of the noisy trace:', rms_noisy)
     threshold_factor = 1  # define the threshold
     threshold = threshold_factor * rms_noisy  # [Hz]
-    threshold = threshold_factor * 0.001247408194483884  # [Hz]  TRY THIS from the RMS of the FFT
+    #threshold = threshold_factor * 0.001247408194483884  # [Hz]  TRY THIS from the RMS of the FFT
     
     # find peaks above threshold; peaks are indexes of samples
     #distance=10*t_b*sampling
@@ -303,7 +342,7 @@ if __name__ == "__main__":
 
     # Save the TP to be used as a PDF
     (df_peaks[df_peaks['peak'].isin(peaks_TP)].delta * calibration).rename('Energy [ev]').to_csv('peaks_calibrated.csv', index=False)
-
+    print('TP saved to be used as a PDF in: peaks_calibrated.csv')
     
     # Reco vs Truth
     # loop through each peak and gather reco and truth energy

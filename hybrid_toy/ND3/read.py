@@ -104,7 +104,7 @@ if __name__ == "__main__":
     # plot the width distribution vs time
     sampling=100
     plt.figure(figsize=(16, 4))
-    plt.plot(total[:36000*sampling], linestyle='', marker='.', color="black", label='Fake data')
+    plt.plot(total[:36000*2*sampling], linestyle='', marker='.', color="black", label='Fake data')
     plt.plot(noisy_trace[:36000*sampling], label="Fake data + FFT Noise")
     plt.legend(loc='upper right')
     plt.title("Width distribution (subset)")

@@ -29,12 +29,12 @@ neutrons_events=2.32E+12
 neutrons_ambient_events=1.99E+11
 
 # rates
-cosmics_rate=6e3  # [ev/s], activity*surface of the CRY generator
+cosmics_rate=0  # [ev/s], activity*surface of the CRY generator
 source_rate=0  # [ev/s], 30 kBq Fe55 source
-gammas_rate=0 # [ev/s], activity*surface of the ambient generator  ## FIX THIS!!!!
-neutrons_rate=0 # [ev/s], activity*surface of the CRY generator
-neutrons_ambient_rate=0 # [ev/s], activity*surface of the ambient generator; activity from Eur. Phys. J. C (2023) 83:94  # FIX THIS
-radiogenics_rate=0  # flag to simulate radiogenics (real rate will be read from the file)
+gammas_rate=0  # [ev/s], activity*surface of the ambient generator  ## FIX THIS!!!!
+neutrons_rate=0  # [ev/s], activity*surface of the CRY generator
+neutrons_ambient_rate=0  # [ev/s], activity*surface of the ambient generator; activity from Eur. Phys. J. C (2023) 83:94  # FIX THIS
+radiogenics_rate=1  # flag to simulate radiogenics (real rate will be read from the file)
 
 #cosmics_rate=0
 #source_rate=0

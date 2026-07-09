@@ -34,18 +34,14 @@ source_rate=30e3  # [ev/s], 30 kBq Fe55 source
 gammas_rate=2.5*3.66e6 # [ev/s], activity*surface of the ambient generator  ## FIX THIS!!!!
 neutrons_rate=6480 # [ev/s], activity*surface of the CRY generator
 neutrons_ambient_rate= 0.018*3.66e6 # [ev/s], activity*surface of the ambient generator; activity from Eur. Phys. J. C (2023) 83:94  # FIX THIS
-
-cosmics_rate=6e3  # [ev/s], activity*surface of the CRY generator
-#source_rate=0
-#gammas_rate=0
-neutrons_rate=6480 # [ev/s], activity*surface of the CRY generator
-neutrons_ambient_rate= 0.018*3.66e6 # [ev/s], activity*surface of the ambient generator; activity from Eur. Phys. J. C (2023) 83:94  # FIX THIS
+radiogenics_rate=1  # flag to simulate radiogenics (real rate will be read from the file)
 
 # noise
 fft_file='Run23_8mA_01V_noisepwr_quietregions.csv'
 
-max_time = 3600*100   # [second], total lenght of the sample
-#max_time = 930   # [second], total lenght of the sample
+# acquisition
+max_time = 3600*100  # [second], total lenght of the sample
+#max_time = 93040/100   # [second], total lenght of the sample
 sampling = 100    # [Hz], sampling (points per second)
 
 ## Cell:  ####################################################

@@ -2,17 +2,14 @@
 # Run as: condor_submit job.submit
 #
 
-#basedir    = /data/questdmc/users/franchinip/QUEST/ND3/toy/all
-#basedir    = /data/questdmc/users/franchinip/QUEST/ND3/toy/all-tw_dependency
-#basedir    = /data/questdmc/users/franchinip/QUEST/ND3/toy/all-truthfix
-basedir    = /data/questdmc/users/franchinip/QUEST/ND3/toy/all-v2
+basedir    = /data/questdmc/users/franchinip/QUEST/ND3/toy/radiogenics
 
 Universe   = vanilla
 
 Requirements = (OpSysName == "AlmaLinux")
 
 Executable = /usr/bin/python
-Arguments  = $(basedir)/../toy.py --config config.py --noise real --output $(basedir)/all_$(ProcId)
+Arguments  = $(basedir)/../toy.py --config config-radiogenics.py --noise real --output $(basedir)/all_$(ProcId)
 
 jobdir  = $(basedir)
 
@@ -31,4 +28,4 @@ request_disk = 2500MB
 request_memory = 5500MB
 
 # number of identical jobs
-Queue 20
+Queue 200

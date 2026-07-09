@@ -16,23 +16,38 @@ plot = False
 # g4quest output [MeV]
 cosmics='/data/questdmc/users/franchinip/QUEST/ND3/cosmics/output-b/cosmics.root'
 source='/data/questdmc/users/franchinip/QUEST/ND3/source/output/source.root'
-gammas='/data/questdmc/users/bloomfield/ND3/gamma/output-rethrow-final/gamma-rethrow.root'  # Lizzie
+gammas='/home/franchinip/dataQUEST/QUEST/ND3/gammas/output-b/gamma-rethrow.root'  # Fixed Ambient volume
+neutrons='/data/questdmc/users/franchinip/QUEST/ND3/neutrons/output-b/neutrons.root'
+#neutrons_ambient='/home/franchinip/dataQUEST/QUEST/ND3/neutrons-ambient/output-b/neutrons-ambient.root'
+radiogenics='/data/questdmc/users/bloomfield/ND3/QUEST_background_model/output/scaled_summed_0.1kev_rad_pdf.txt'  # Merged; already normalised /cell/day/0.1keV
 
 # number of Geant4 (equivalent) primaries
 cosmics_events=6.86E+11
 source_events=7.58E+11
-gammas_events=1.78E+10  # Lizzie
+gammas_events=1.80E+12  ## old 1.78E+10  # Lizzie
+neutrons_events=2.32E+12
+neutrons_ambient_events=1.99E+11
 
 # rates
+cosmics_rate=0  # [ev/s], activity*surface of the CRY generator
 source_rate=0  # [ev/s], 30 kBq Fe55 source
-cosmics_rate=0 # simulate only the source
-gammas_rate=178695 # [ev]s], activity*surface of the ambient generator
+gammas_rate=2.5*3.66e6  # [ev/s], activity*surface of the ambient generator  ## FIX THIS!!!!
+neutrons_rate=0  # [ev/s], activity*surface of the CRY generator
+neutrons_ambient_rate=0  # [ev/s], activity*surface of the ambient generator; activity from Eur. Phys. J. C (2023) 83:94  # FIX THIS
+radiogenics_rate=0  # flag to simulate radiogenics (real rate will be read from the file)
+
+#cosmics_rate=0
+#source_rate=0
+#gammas_rate=0
+#neutrons_rate=0
+#neutrons_ambient_rate=0
 
 # noise
 fft_file='Run23_8mA_01V_noisepwr_quietregions.csv'
 
-max_time = 3600*100   # [second], total lenght of the sample
-#max_time = 930   # [second], total lenght of the sample
+# acquisition
+max_time = 3600*100  # [second], total lenght of the sample
+#max_time = 93040/100   # [second], total lenght of the sample
 sampling = 100    # [Hz], sampling (points per second)
 
 ## Cell:  ####################################################
@@ -45,8 +60,8 @@ diameter = 400e-9  # [m] vibrating wire diameter
 l = 2e-3           # [m] vibrating wire length
 density = 6.05e3   # [kg/m^3] Niobium-Titanium (NbTi)
 
-t_b = 0.65  # [s] decay constant
-t_w = 0.15  # [s] rise constant
+t_b = 0.78  # [s] decay constant from ND3
+t_w = 0.15  # [s] rise constant from ND3
 
 pressure = 18.5        # [bar]
 temperature = 0.32e-3  # [K]
