@@ -39,10 +39,17 @@ radiogenics_rate=1  # flag to simulate radiogenics (real rate will be read from 
 # noise
 fft_file='Run23_8mA_01V_noisepwr_quietregions.csv'
 
+# energy partition model
+partition_NR_file='modelA_NR_response.csv'
+partition_ER_file='modelA_NR_response.csv'
+
+time=86400  # [s], time for the binning
+max_energy=10000  # [keV], max energy cut
+
 # acquisition
-max_time = 3600*100  # [second], total lenght of the sample
+max_time = 3600*10  # [second], total lenght of the sample
 #max_time = 93040/100   # [second], total lenght of the sample
-sampling = 100    # [Hz], sampling (points per second)
+sampling = 100  # [Hz], sampling (samples per second)
 
 ## Cell:  ####################################################
 

@@ -2,6 +2,7 @@
  - QUEST-DMC WP1 full toy simulation of a train of pulses, for ND3, given
     * a noise FFT    
     * energy PDFs from g4quest and from merged radiogenics
+    * energy partition function of measurable events for ER and NR
 
  - Output:
     Toy simulation single Pickle file:
@@ -9,7 +10,7 @@
        * calibration [eV/Hz];
        * df_truth: ID | start time of the peak [s] | energy [eV] | specie
 
-P. Franchini 4/2026
+P. Franchini 7/2026
 '''
 
 import os
@@ -33,6 +34,94 @@ exec(open("../../mod_quest.py").read())
 #matplotlib.use("Agg")  # use headless backend
 #===========================================================
 
+def partition(pdf_file,simulation_events,simulation_rate):
+    '''
+    Applies the partition of the fraction of measurable energies to a simulation ROOT file
+      Arguments: g4quest ROOT file path
+      Results: array of energies [keV], merged for ER and NR (WITHOUT the correct total rate normalisation)
+    '''
+
+    # Read partition files from E.L. ( Energy [keV] | Measurable fraction | Error )
+    partition_ER = pd.read_csv(partition_ER_file)
+    partition_ER_energy = partition_ER.iloc[:, 0].to_numpy()
+    partition_ER_fraction = partition_ER.iloc[:, 1].to_numpy()
+    partition_ER_error = partition_ER.iloc[:, 2].to_numpy()
+
+    partition_NR = pd.read_csv(partition_NR_file)
+    partition_NR_energy = partition_NR.iloc[:, 0].to_numpy()
+    partition_NR_fraction = partition_NR.iloc[:, 1].to_numpy()
+    partition_NR_error = partition_NR.iloc[:, 2].to_numpy()
+
+    # PDG IDs (absolute values)
+    pdg_ER = [11, 13, 22]
+    pdg_NR = [1000010020, 1000010030, 1000020030, 1000020040]
+    pdg_to_be_decided = [211, 2212, 321]  # ???
+
+    pdg_cut_ER = " | ".join(f"(abs(fPDG) == {abs(code)})" for code in pdg_ER)
+    pdg_cut_NR = " | ".join(f"(abs(fPDG) == {abs(code)})" for code in pdg_NR)
+
+    # Energy arrays for ER and NR from the ROOT file (geant4 MeV, converted to keV)
+    arrays = pdf_file.arrays(["fEdep", "fEvent", "fPDG", "fTrack", "fGlobalTime"], f"(fEdep > 0) & ({pdg_cut_ER})", library="np",)
+    pdf_energy_ER = arrays['fEdep']*1e3  # [keV]
+    arrays = pdf_file.arrays(["fEdep", "fEvent", "fPDG", "fTrack", "fGlobalTime"], f"(fEdep > 0) & ({pdg_cut_NR})", library="np",)
+    pdf_energy_NR = arrays['fEdep']*1e3  # [keV]
+
+    # Interpolate partition fraction vs energy, evaluated on the energy PDFs
+    partition_ER_fraction = np.interp(pdf_energy_ER, partition_ER_energy, partition_ER_fraction, left=partition_ER_fraction[0], right=partition_ER_fraction[-1])
+    partition_ER_error    = np.interp(pdf_energy_ER, partition_ER_energy, partition_ER_error,    left=partition_ER_error[0], right=partition_ER_error[-1])
+    partition_NR_fraction = np.interp(pdf_energy_NR, partition_NR_energy, partition_NR_fraction, left=partition_NR_fraction[0], right=partition_NR_fraction[-1])
+    partition_NR_error    = np.interp(pdf_energy_NR, partition_NR_energy, partition_NR_error,    left=partition_NR_error[0], right=partition_NR_error[-1])
+
+    # Random smear generator, keeping the fraction as [0-1]
+    rng = np.random.default_rng()
+    partition_ER_fraction = np.clip( rng.normal(loc=partition_ER_fraction, scale=partition_ER_error), 0.0, 1.0 )
+    partition_NR_fraction = np.clip( rng.normal(loc=partition_NR_fraction, scale=partition_NR_error), 0.0, 1.0 )
+
+    # Partition "convolution" of the energy arrays
+    pdf_energy_ER_fraction = pdf_energy_ER * partition_ER_fraction
+    pdf_energy_NR_fraction = pdf_energy_NR * partition_NR_fraction
+
+    # Plot comparison before and after the partition is applied in the [0-200keV] range
+    if plot:
+        # Weights from MC rates
+        bins = np.histogram_bin_edges(np.concatenate([pdf_energy_ER]), bins=2000, range=(0,200))
+        bin_width = np.diff(bins)[0]  # all bins are uniform, so one is representative
+        simulation_weight_per_event = (simulation_rate / simulation_events) * time / bin_width
+        simulation_weights = np.full_like(pdf_energy_ER, simulation_weight_per_event)
+        if len(pdf_energy_ER>0): plt.hist(pdf_energy_ER, bins=bins, weights=simulation_weights, alpha=0.5, histtype="step",  linewidth=2, label='Simulation', color='orange') # [keV]
+        if len(pdf_energy_ER_fraction>0): plt.hist(pdf_energy_ER_fraction, bins=bins, weights=simulation_weights, alpha=0.5, histtype="step",  linestyle='--', linewidth=2, label='Simulation (after partition)') # [keV]
+        plt.title('Background simulation - ER')
+        plt.xlabel('Deposited energy [keV]')
+        plt.yscale('log')
+        plt.ylabel('events/day')
+        plt.legend()
+        plt.grid(True)
+        plt.tight_layout()
+        plt.show()
+
+        bins = np.histogram_bin_edges(np.concatenate([pdf_energy_NR]), bins=2000, range=(0,200))
+        bin_width = np.diff(bins)[0]  # all bins are uniform, so one is representative
+        simulation_weight_per_event = (simulation_rate / simulation_events) * time / bin_width
+        simulation_weights = np.full_like(pdf_energy_NR, simulation_weight_per_event)
+        if len(pdf_energy_NR>0): plt.hist(pdf_energy_NR, bins=bins, weights=simulation_weights, alpha=0.5, histtype="step",  linewidth=2, label='Simulation', color='orange') # [keV]
+        if len(pdf_energy_NR_fraction>0): plt.hist(pdf_energy_NR_fraction, bins=bins, weights=simulation_weights, alpha=0.5, histtype="step", linestyle='--', linewidth=2, label='Simulation (after partition)') # [keV]
+        plt.title('Background simulation - NR')
+        plt.xlabel('Deposited energy [keV]')
+        plt.yscale('log')
+        plt.ylabel('events/day')
+        plt.legend()
+        plt.grid(True)
+        plt.tight_layout()
+        plt.show()
+
+    # Total energies array to be used in the toy
+    #print(pdf_energy_ER_fraction)
+    #print(pdf_energy_NR_fraction)
+    pdf_energy = np.concatenate([pdf_energy_ER_fraction, pdf_energy_NR_fraction])
+
+    return(pdf_energy)
+
+
 def read_radiogenics(radiogenics): #,simulation_events,simulation_rate):
     '''
     Read a CSV file to generate a PDF for the events injection. Files was produced by the merge code for the radiogenics.
@@ -40,7 +129,7 @@ def read_radiogenics(radiogenics): #,simulation_events,simulation_rate):
       Returns: expected deposited rate [ev/second], (energy_values, energy_probabilities)
     '''
     
-    time=86400 # [s] # as in the merged pdf
+    time=86400  # [s] # as in the merged pdf
     
     radiogenics_file = np.loadtxt(radiogenics)
     radiogenics_density = radiogenics_file[:, 0]  # [0-200] keV as in the merged pdf
@@ -50,7 +139,7 @@ def read_radiogenics(radiogenics): #,simulation_events,simulation_rate):
     energy_probabilities = radiogenics_density/sum(radiogenics_density) # normalised to 1
     rate = np.sum(radiogenics_density * 0.1)/time
 
-    #print(rate, energy_values, energy_probabilities)
+    #HERE add the partition????
     
     return rate, energy_values, energy_probabilities
 
@@ -58,53 +147,29 @@ def read_radiogenics(radiogenics): #,simulation_events,simulation_rate):
 def read_root(simulation,simulation_events,simulation_rate):
     '''
     Read a g4quest output root file to generate a PDF for the events injection.
-      Arguments: root file
-      Returns: expected deposited rate [ev/second], (energy_values, energy_probabilities)
+    Applies the partition of the fraction of measurable energies.
+      Arguments: root file, number of Geant4 (equivalent) primaries, activities [ev/s]
+      Returns: expected deposited rate [ev/second], (energy_values [eV], energy_probabilities)
     '''
 
-    time=86400 # [s]
-    max_energy=200 # [keV]
-        
+    # Read Geant4 ROOT file
     pdf_file = uproot.open(f'{simulation}:Scoring')
-    arrays = pdf_file.arrays(["fEdep","fEvent", "fPDG","fTrack", "fGlobalTime"], "(fEdep >0)", library = "np")
-    pdf_energy = arrays['fEdep']*1e3  # [keV]
-    bins = np.histogram_bin_edges(np.concatenate([pdf_energy]), bins=2000, range=(0,max_energy))
+
+    # Applies the partition of the fraction of measurable energies
+    pdf_energy = partition(pdf_file,simulation_events,simulation_rate)  # array of energies [keV]
+
+    # Weights from MC rates
+    bins = np.histogram_bin_edges(np.concatenate([pdf_energy]), bins=10*max_energy, range=(0,max_energy))  # binning of the PDF 0.1 keV/bin
     bin_width = np.diff(bins)[0]  # All bins are uniform, so one is enough
     simulation_weight_per_event = (simulation_rate / simulation_events) * time / bin_width
-    simulation_weights = np.full_like(pdf_energy, simulation_weight_per_event)    
-
-    '''
-    if plot:
-        plt.hist(pdf_energy,  bins=bins, weights=simulation_weights, alpha=0.5, histtype="step",  linewidth=2, label='Simulation', color='orange') # [keV]
-        plt.title('Background simulation')
-        plt.xlabel('Deposited energy [keV]')
-        plt.yscale('log')
-        plt.ylabel('events/day')
-        plt.legend()
-        plt.grid(True)
-        plt.tight_layout()
-        plt.show()
-    '''
+    simulation_weights = np.full_like(pdf_energy, simulation_weight_per_event)
 
     hist, bin_edges = np.histogram(pdf_energy, bins=bins, weights=simulation_weights, density=True)
     energy_values = 0.5 * (bin_edges[1:] + bin_edges[:-1]) * 1e3 # [eV]
     energy_probabilities = hist / np.sum(hist)
 
-    '''
-    if plot:
-        # Plot energy values against weights
-        plt.plot(energy_values, energy_probabilities, marker='o', linestyle='-', color='b') # [eV]
-        plt.xlabel('Energy [ev]')
-        plt.yscale('log')
-        plt.ylabel('Entries')
-        plt.title('Energy PDF')
-        plt.grid(True)
-        plt.show()
-    '''
-
     rate = len(pdf_energy)*simulation_rate/simulation_events
 
-    #print(rate, energy_values, energy_probabilities)
     return rate, energy_values, energy_probabilities
 
 
@@ -150,7 +215,7 @@ def inject_events(rate, energy_values, energy_probabilities, truth_ids, descript
         for start in tqdm(starts):
          
             # randomised event energy
-            energy = np.random.choice(energy_values, p=energy_probabilities)
+            energy = np.random.choice(energy_values, p=energy_probabilities)  # generates a random sample from the energy array, based on the 
         
             # real increased temperature wrt the starting ttc of the config
             #temperature=(ttc*start)*temperature_critical_superfluid(pressure).item()
@@ -161,7 +226,7 @@ def inject_events(rate, energy_values, energy_probabilities, truth_ids, descript
                 print('\tenergy [ev]',energy)
             
             # write truth on a dataframe
-            df_truth.loc[len(df_truth)] = [len(df_truth), start, energy, description]  # (ID, start time of the peak, energy, species)
+            df_truth.loc[len(df_truth)] = [len(df_truth), start, energy, description]  # (ID, start time of the peak [s], energy [eV], species)
         
             # Base width from the input base temperature
             #f_base = Width_from_Temperature(temperature,pressure,diameter)
@@ -300,7 +365,7 @@ if __name__ == "__main__":
     # Starting temperature
     print('Starting Temperature:\t',temperature*1e6,'[uK]')
     ttc = temperature/temperature_critical_superfluid(pressure)
-    print('Starting T/Tc:\t',ttc)
+    print('Starting T/Tc:\t\t',ttc)
     f_base = Width_from_Temperature(temperature, pressure, diameter)
     print('Base width [Hz]:\t', f_base)
     
@@ -345,7 +410,9 @@ if __name__ == "__main__":
     truth_ids = np.full_like(t, -1, dtype=int)
     
     calibration = DeltaWidth_from_Energy(1000, pressure, temperature, diameter)[1]  # [eV/Hz]
-        
+
+    print('\nReading ROOT files...')
+
     cosmics_rate, cosmics_energy_values, cosmics_energy_probabilities = read_root(cosmics,cosmics_events,cosmics_rate)
     source_rate, source_energy_values, source_energy_probabilities = read_root(source,source_events,source_rate)
     gammas_rate, gammas_energy_values, gammas_energy_probabilities = read_root(gammas,gammas_events,gammas_rate)
@@ -353,6 +420,7 @@ if __name__ == "__main__":
     if radiogenics_rate>0:
         radiogenics_rate, radiogenics_energy_values, radiogenics_energy_probabilities = read_radiogenics(radiogenics) #,radiogenics_events,radiogenics_rate)
 
+    print('\nInjecting events...')
     if cosmics_rate>0:
         cosmics_truth = inject_events(cosmics_rate, cosmics_energy_values, cosmics_energy_probabilities, truth_ids, 'Cosmics')
         total += cosmics_truth
@@ -474,10 +542,10 @@ if __name__ == "__main__":
         ##N0 = t.size      # this must be the t_size used in calc_fft_power
         ##fs = sampling
 
-        print("CSV max freq:       ", freqs[-1])
-        print("Generated max freq: ", target_fft_freqs[-1])
-        print("Lowest CSV freq:", freqs[0])
-        print("Lowest new freq:", target_fft_freqs[1])
+        print("  CSV max freq:       ", freqs[-1])
+        print("  Generated max freq: ", target_fft_freqs[-1])
+        print("  Lowest CSV freq:", freqs[0])
+        print("  Lowest new freq:", target_fft_freqs[1])
         delta_f0 = sampling / t.size
 
         # ----------------------------------------------------------
@@ -493,8 +561,8 @@ if __name__ == "__main__":
 
         # 4. Convert bin power to FFT magnitude
         fft_amplitude = np.sqrt(bin_power) * n_samples
-        print("DC variance contribution:",      psd_values[0] * delta_f0)
-        print("Total variance:",      np.sum(psd_values * delta_f0))
+        print("  DC variance contribution:", psd_values[0] * delta_f0)
+        print("  Total variance:", np.sum(psd_values * delta_f0))
         
         # Random phase
         random_phases = np.exp(1j * 2 * np.pi * np.random.rand(len(fft_amplitude)))
@@ -582,7 +650,7 @@ if __name__ == "__main__":
         plt.grid(True, which="both")
         plt.show()
 
-        
+        '''
         # Calculate FFT on the noise generated trace
         #w_noise_freq, w_noise_amp = calc_fft(t[:t_size_est], noise[:t_size_est]) #t_size_est
         w_noise_freq, w_noise_power = calc_fft_power(t, noise) #t_size_est
@@ -596,7 +664,7 @@ if __name__ == "__main__":
         plt.grid(which='minor',alpha=0.3)
         plt.legend()
         plt.show()        
-
+        '''
     
     # Plotting:
     #if verbose:
@@ -620,7 +688,7 @@ if __name__ == "__main__":
     plt.show()
 
     # Create a DF with `time|width with noise|true width|id`
-    df_total = pd.DataFrame({'time': t,'width': noisy_trace,'true_width': total, 'id': truth_ids})  # (t: time, width variation with noise, true width, truth_ids: truth ID)
+    df_total = pd.DataFrame({'time': t,'width': noisy_trace,'true_width': total, 'id': truth_ids})  # (t: time, width variation with noise [Hz], true width [Hz], truth_ids: truth ID)
     
     # Output on disk: df_total + calibration + df_truth
     import pickle
